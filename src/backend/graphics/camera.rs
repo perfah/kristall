@@ -1,4 +1,4 @@
-use crate::util::wgpu::OPENGL_TO_WGPU_MATRIX;
+use crate::backend::graphics::OPENGL_TO_WGPU_MATRIX;
 use winit::event::{WindowEvent, ElementState, VirtualKeyCode, KeyboardInput};
 use cgmath::InnerSpace;
 

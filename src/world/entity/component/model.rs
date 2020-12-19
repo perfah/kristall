@@ -1,5 +1,5 @@
 use crate::world::entity::component::{Component};
-use crate::util::wgpu::uniform::SpatialInfo;
+use crate::backend::graphics::uniform::SpatialInfo;
 use failure::_core::any::Any;
 
 pub struct GraphicsModel {

@@ -2,7 +2,7 @@ use std::ops::Range;
 use std::path::Path;
 use wgpu::util::DeviceExt;
 
-use crate::util::wgpu::texture;
+use crate::backend::graphics::texture;
 use bytemuck::{Pod, Zeroable};
 
 pub trait Vertex {

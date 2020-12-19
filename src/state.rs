@@ -1,10 +1,10 @@
-use crate::util::wgpu::WGPUState;
+use crate::backend::graphics::WGPUState;
 use crate::world::World;
 use std::collections::HashMap;
 use std::time::{Instant, Duration};
 use crate::world::entity::component::ComponentManager;
 use crate::world::entity::component::transform::Transform;
-use crate::util::wgpu::model::Model;
+use crate::backend::graphics::model::Model;
 use winit::window::Window;
 use crate::world::entity::EntityContainer;
 use crate::world::entity::component::model::GraphicsModel;

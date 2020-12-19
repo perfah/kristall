@@ -1,5 +1,3 @@
-use crate::util::wgpu::camera::Camera;
-
 #[repr(C)] // We need this for Rust to store our data correctly for the shaders
 #[derive(Debug, Copy, Clone)] // This is so we can store this in a buffer
 pub struct Uniforms {

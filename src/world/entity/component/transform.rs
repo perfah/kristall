@@ -1,5 +1,5 @@
 use crate::world::entity::component::{Component};
-use crate::util::wgpu::uniform::{TransformRaw};
+use crate::backend::graphics::uniform::{TransformRaw};
 use failure::_core::any::Any;
 use cgmath::{Vector3, Quaternion};
 

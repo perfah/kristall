@@ -5,6 +5,7 @@
 mod world;
 mod util;
 mod state;
+mod backend;
 
 extern crate winit;
 extern crate wgpu;
@@ -22,7 +23,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use futures::executor::block_on;
-use crate::util::wgpu::WGPUState;
+use crate::backend::graphics::WGPUState;
 use crate::state::State;
 
 fn main() {

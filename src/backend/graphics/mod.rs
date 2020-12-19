@@ -10,11 +10,11 @@ use winit::{
 };
 use std::{mem, iter};
 use model::DrawModel;
-use crate::util::wgpu::texture::Texture;
-use crate::util::wgpu::camera::{Camera, CameraController, CameraPerspective};
-use crate::util::wgpu::uniform::{Uniforms, SpatialInfo, TransformRaw};
-use crate::util::wgpu::model::Vertex;
-use crate::util::wgpu::model::Model;
+use crate::backend::graphics::texture::Texture;
+use crate::backend::graphics::camera::{Camera, CameraController, CameraPerspective};
+use crate::backend::graphics::uniform::{Uniforms, SpatialInfo, TransformRaw};
+use crate::backend::graphics::model::Vertex;
+use crate::backend::graphics::model::Model;
 use cgmath::{Rotation3, InnerSpace, Zero};
 use std::time::{Instant, Duration};
 use crate::world::World;
