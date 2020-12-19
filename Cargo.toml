@@ -1,0 +1,24 @@
+[package]
+name = "kristall"
+version = "0.1.0"
+authors = ["Per Fahlander <perfah@kth.se>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+winit = "0.24.0"
+wgpu = "0.6.2"
+image = "0.23.6"
+futures = "0.3.5"
+
+log = "0.4.8"
+env_logger = "0.7.1"
+shaderc = "0.6"
+bytemuck = "1.4.1"
+failure = "0.1.8"
+cgmath = "0.17"
+tobj = {version = "2.0.2", features = ["log"]}
+downcast-rs = "1.2.0"
+rand = "0.7.3"
+rand_core = "0.5.1"
