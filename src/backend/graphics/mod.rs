@@ -26,6 +26,8 @@ use std::collections::HashMap;
 use wgpu::{BufferAddress, BindGroupLayout, BufferDescriptor, CommandEncoder, RenderPass, Device, Buffer, BindGroup, TextureView};
 use wgpu::util::DeviceExt;
 
+mod ui;
+
 pub const WHOLE_SIZE: BufferAddress = !0;
 
 #[rustfmt::skip]
@@ -51,8 +53,6 @@ pub struct WGPUState {
     uniform_bind_group_layout: wgpu::BindGroupLayout,
     uniform_bind_group: wgpu::BindGroup,
     size: winit::dpi::PhysicalSize<u32>,
-    delta: Duration,
-    prev_instant: Instant,
     instances: Vec<TransformRaw>,
     instance_buffer: wgpu::Buffer
 }
@@ -241,8 +241,6 @@ impl WGPUState {
             uniforms,
             depth_texture,
             size,
-            delta: Duration::new(0, 0),
-            prev_instant: Instant::now(),
             texture_bind_group_layout,
             instances,
             instance_buffer
@@ -278,8 +276,11 @@ impl WGPUState {
         );
     }
 
-    pub fn render(&mut self, instances: &Vec<(ComponentManager<Transform>, &'static str)>, loaded_models: &HashMap<&'static str, Model>) {
-        let frame = self.swap_chain.get_current_frame().unwrap().output;
+    pub fn render(&mut self, instances: &Vec<(ComponentManager<Transform>, &'static str)>, 
+                             loaded_models: &HashMap<&'static str, Model>,
+                             fps: u128) {
+        
+        let frame = self.swap_chain.get_current_frame().unwrap();
 
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
@@ -288,7 +289,7 @@ impl WGPUState {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.view,
+                    attachment: &frame.output.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -313,7 +314,7 @@ impl WGPUState {
             render_pass.set_pipeline(&self.render_pipeline);
 
             let vertex_buffer_size = (mem::size_of::<[f32; 4]>() * 4) as u64;
-
+            
             for (i, (transform, model_str)) in instances.iter().enumerate() {
                 //if i > 2 { break; }
                 let model = loaded_models.get(model_str).unwrap();
@@ -324,6 +325,15 @@ impl WGPUState {
                 render_pass.draw_model(model, &self.uniform_bind_group);
             }
         }
+
+        
+        ui::text::render_text(&self.device, 
+                              &self.queue,
+                              &mut encoder,
+                              &frame.output.view,
+                              &self.sc_desc,
+                              format!("FPS: {}", fps),
+                              (self.sc_desc.width as f32 - 200f32, 0.0));
 
         self.queue.submit(iter::once(encoder.finish()));
     }

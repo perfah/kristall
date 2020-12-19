@@ -11,4 +11,5 @@ Cargo.lock
 
 /res/model/*
 /res/opt-out
+/res/font/*
 /.vscode/

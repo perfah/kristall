@@ -22,3 +22,4 @@ tobj = {version = "2.0.2", features = ["log"]}
 downcast-rs = "1.2.0"
 rand = "0.7.3"
 rand_core = "0.5.1"
+wgpu_glyph = "0.10.0"

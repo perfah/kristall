@@ -84,10 +84,10 @@ impl State {
         let now = Instant::now();
         self.delta = now - self.prev_instant;
         self.prev_instant = now;
-        if self.delta.as_millis() > 0 {
-            let fps =  1000 / self.delta.as_millis();
-            println!("FPS = {}",fps);
-        }
+        //if self.delta.as_millis() > 0 {
+        //    let fps =  1000 / self.delta.as_millis();
+        //    println!("FPS = {}",fps);
+        //}
 
 
         
@@ -119,7 +119,9 @@ impl State {
     }
 
     pub fn render(&mut self){
-        self.backend.render(&self.instances, &self.loaded_models)
+        let fps =  1000 / self.delta.as_millis();
+
+        self.backend.render(&self.instances, &self.loaded_models, fps)
     }
 
 }
