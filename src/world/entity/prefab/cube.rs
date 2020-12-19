@@ -18,7 +18,7 @@ impl Prefab for Cube {
             .with_name("cubeyboi")
             .with_component(Transform::new()
                 .with_position(self.pos.clone()))
-            .with_component(GraphicsModel::from("/home/perfah/Programming/kristall/res/cube.obj"))
+            .with_component(GraphicsModel::from("/home/perfah/Programming/kristall/res/model/cube.obj"))
             .with_component(RigidBody::new(10000000000000000000.0));
     }
 }
