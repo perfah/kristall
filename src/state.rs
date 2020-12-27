@@ -15,24 +15,22 @@ use crate::world::entity::prefab::rand_tile::RandomTile;
 use cgmath::Vector3;
 
 pub struct State {
-    backend: WGPUState,
+    graphics_backend: WGPUState,
     world: World,
     camera: ComponentManager<Camera>,
     instances: Vec<(ComponentManager<Transform>, &'static str)>,
     loaded_models: HashMap<&'static str, Model>,
     delta: Duration,
     prev_instant: Instant
-
-    // HashMap<&'static str, Vec<Transform>
 }
 
 impl State {
     pub async fn new(window: &Window, vsync: bool) -> Self {
         let world_generator = RandomTile::from_entropy();
-        let mut world = World::new(world_generator);
+        let world = World::new(world_generator);
 
         Self {
-            backend: WGPUState::new(window, vsync).await,
+            graphics_backend: WGPUState::new(window, vsync).await,
             world: world.clone(),
             camera: world.query_components(true).next().unwrap(),
             instances: Vec::new(),
@@ -59,9 +57,9 @@ impl State {
                 self.loaded_models.insert(
                     obj_path,
                     Model::load(
-                        &self.backend.device,
-                        &self.backend.queue,
-                        &self.backend.texture_bind_group_layout,
+                        &self.graphics_backend.device,
+                        &self.graphics_backend.queue,
+                        &self.graphics_backend.texture_bind_group_layout,
                         obj_path
                     ).ok().unwrap()
                 );
@@ -73,7 +71,7 @@ impl State {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>){
         self.camera.peek_mut(|camera| camera.aspect = new_size.width as f32 / new_size.height as f32);
-        self.backend.resize(new_size);
+        self.graphics_backend.resize(new_size);
     }
 
     pub fn input(&mut self, event: &WindowEvent) -> bool {
@@ -104,7 +102,7 @@ impl State {
 
         self.update_graphics_data();
 
-        self.backend.update(&self.instances, build_proj_matrix)
+        self.graphics_backend.update(&self.instances, build_proj_matrix)
     
 
     }
@@ -112,7 +110,7 @@ impl State {
     pub fn render(&mut self){
         let fps =  1000 / self.delta.as_millis();
 
-        self.backend.render(&self.instances, &self.loaded_models, fps)
+        self.graphics_backend.render(&self.instances, &self.loaded_models, fps)
     }
 
 }
