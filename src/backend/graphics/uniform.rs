@@ -22,22 +22,6 @@ impl Uniforms {
 unsafe impl bytemuck::Pod for Uniforms {}
 unsafe impl bytemuck::Zeroable for Uniforms {}
 
-pub struct SpatialInfo {
-    pub position: cgmath::Vector3<f32>,
-    pub rotation: cgmath::Quaternion<f32>,
-}
-
-impl SpatialInfo {
-    // This is changed from `to_matrix()`
-    pub fn to_raw(&self) -> TransformRaw {
-        TransformRaw {
-            model: (cgmath::Matrix4::from_translation(self.position)
-                * cgmath::Matrix4::from(self.rotation)
-            ).into(),
-        }
-    }
-}
-
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct TransformRaw {

@@ -12,7 +12,7 @@ use std::{mem, iter};
 use model::DrawModel;
 use crate::backend::graphics::texture::Texture;
 use crate::backend::graphics::camera::{Camera, CameraController, CameraPerspective};
-use crate::backend::graphics::uniform::{Uniforms, SpatialInfo, TransformRaw};
+use crate::backend::graphics::uniform::{Uniforms, TransformRaw};
 use crate::backend::graphics::model::Vertex;
 use crate::backend::graphics::model::Model;
 use cgmath::{Rotation3, InnerSpace, Zero};

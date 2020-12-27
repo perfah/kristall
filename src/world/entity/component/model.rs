@@ -1,6 +1,4 @@
 use crate::world::entity::component::{Component};
-use crate::backend::graphics::uniform::SpatialInfo;
-use failure::_core::any::Any;
 
 pub struct GraphicsModel {
     pub path_to_obj: &'static str
