@@ -84,13 +84,7 @@ impl State {
         let now = Instant::now();
         self.delta = now - self.prev_instant;
         self.prev_instant = now;
-        //if self.delta.as_millis() > 0 {
-        //    let fps =  1000 / self.delta.as_millis();
-        //    println!("FPS = {}",fps);
-        //}
 
-
-        
         let build_proj_matrix = {
             let mut camera = self.camera.lock_component_for_write();
             camera.update();
@@ -108,10 +102,7 @@ impl State {
         });
 */
 
-        if self.delta.as_millis() == 0 {
-            self.update_graphics_data();
-        }
-        
+        self.update_graphics_data();
 
         self.backend.update(&self.instances, build_proj_matrix)
     

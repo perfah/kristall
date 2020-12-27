@@ -20,7 +20,7 @@ impl Prefab for Player {
 
         let lower = Cube{
             pos: Vector3 {x: 0.0, y: 3.0, z: 0.0},
-            mass: 10000000000000000.0,
+            mass: 0.0,
             rot: false
         }.instantiate().build();
 

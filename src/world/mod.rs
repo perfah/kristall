@@ -30,7 +30,7 @@ impl World {
         let root = world_builder.build();
 
         start_system_in_parallel::<TranslateSystem, Entity>(root.clone());
-        //start_system_in_parallel::<GravitySystem, Entity>(root.clone());
+        start_system_in_parallel::<GravitySystem, Entity>(root.clone());
 
         World { root }
     }

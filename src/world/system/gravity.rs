@@ -13,7 +13,7 @@ use crate::world::entity::component::rigid_body::RigidBody;
 use cgmath::MetricSpace;
 use cgmath::InnerSpace;
 
-pub const G: f32 = 0.000000000067f32;
+pub const G: f64 = 0.000000000067f64;
 
 pub struct GravitySystem {
     transforms: Vec<ComponentManager<Transform>>,
@@ -65,23 +65,23 @@ impl<'a> System<'a> for GravitySystem {
 
     fn on_run(&self, (transforms, mut rigid_bodies): Self::Environment, delta: Duration) {
         for i in 0..transforms.len() {
-            for j in (i+1)..transforms.len() {
+            for j in 0..transforms.len() {
+                if i == j { continue; }
                 let transform_i = transforms.get(i).unwrap();
                 let transform_j = transforms.get(j).unwrap();
 
                 let pos_i = transform_i.pos;
                 let pos_j = transform_j.pos;
-                let dist_i_to_j = (pos_j - pos_i);
-                let dist_j_to_i = (pos_i - pos_j);
-                let mass_i = rigid_bodies.get_mut(i).unwrap().mass;
-                let mass_j = rigid_bodies.get_mut(j).unwrap().mass;
+                let dist_i_to_j = pos_j - pos_i;
+                let dist_j_to_i = dist_i_to_j * -1.0;
+                let mass_i = rigid_bodies.get_mut(i).unwrap().mass as f64;
+                let mass_j = rigid_bodies.get_mut(j).unwrap().mass as f64;
 
-                let r = dist_i_to_j.magnitude().abs();
-
-                let F = G / (mass_i * mass_j) / (r * r);
-
-                rigid_bodies.get_mut(i).unwrap().cast_force("gravity", dist_i_to_j.normalize() * F);
-                rigid_bodies.get_mut(j).unwrap().cast_force("gravity", dist_j_to_i.normalize() * F);
+                let r = dist_i_to_j.magnitude().abs() as f64;
+                
+                let force = G * (mass_i * mass_j) / (r as f64 * r as f64);
+                rigid_bodies.get_mut(i).unwrap().cast_force("gravity", dist_i_to_j.normalize() * force as f32);
+                rigid_bodies.get_mut(j).unwrap().cast_force("gravity", dist_j_to_i.normalize() * force as f32);
             }
         }
 

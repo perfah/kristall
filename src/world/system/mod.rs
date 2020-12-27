@@ -48,7 +48,7 @@ pub trait System<'a>: Send + Sync
             sleep(Duration::new(timeout_s, 0));
         }
 
-        println!("{}: Now active", system_name);
+        println!("{}: Now online!", system_name);
 
         let mut prev_time = Instant::now();
 

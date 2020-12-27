@@ -32,8 +32,8 @@ impl Prefab for RandomTile {
 
         let rand_nums = (self.0).0;
 
-        for i in 0..10 {
-            for j in 0..10 {
+        for i in 0..25 {
+            for j in 0..25 {
                 for k in 0..5 {
                     let cube = Cube {
                         pos: Vector3 {
