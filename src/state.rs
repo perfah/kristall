@@ -21,9 +21,9 @@ use crate::backend::graphics::transform::TransformSink;
 pub struct State {
     backend_proxy: BackendProxy,
     graphics_backend: WGPUState,
+    graphics_cache: HashMap<&'static str, Vec<Arc<TransformSink>>>,
     world: World,
     camera: ComponentManager<Camera>,
-    transform_sinks: HashMap<&'static str, Vec<Arc<TransformSink>>>,
     loaded_models: HashMap<&'static str, Model>,
     delta: Duration,
     prev_instant: Instant
@@ -37,16 +37,19 @@ impl State {
         let world_generator = RandomTile::from_entropy();
         let world = World::new(world_generator, &backend_proxy);
 
-        Self {
+        let mut state = Self {
             backend_proxy,
             graphics_backend,
+            graphics_cache: HashMap::new(),
             world: world.clone(),
             camera: world.query_components(true).next().unwrap(),
-            transform_sinks: HashMap::new(),
             loaded_models: HashMap::new(),
             delta: Duration::new(0, 0),
             prev_instant: Instant::now()
-        }
+        };
+
+        state.update_graphics_data();
+        state
     }
 
     // TODO: Use HashMap<&str, Vec<TransformSink>>
@@ -56,7 +59,7 @@ impl State {
             .filter(|(a, b)| a.is_some() && b.is_some())
             .map(|(a, b)| (a.unwrap(), b.unwrap()));
 
-        self.transform_sinks.clear();
+        self.graphics_cache.clear();
 
         while let Some((ref transform, ref graphics_model)) = drawables.next() {
             let obj_path = graphics_model
@@ -76,15 +79,15 @@ impl State {
             }
 
 
-            if !self.transform_sinks.contains_key(obj_path) {
-                self.transform_sinks.insert(obj_path, Vec::new());
+            if !self.graphics_cache.contains_key(obj_path) {
+                self.graphics_cache.insert(obj_path, Vec::new());
             }
 
-            let mut current = self.transform_sinks.remove(obj_path).unwrap();
+            let mut current = self.graphics_cache.remove(obj_path).unwrap();
         
             current.push(transform.lock_component_for_read().sink.clone());
 
-            self.transform_sinks.insert(obj_path, current);
+            self.graphics_cache.insert(obj_path, current);
         }
     }
 
@@ -119,8 +122,7 @@ impl State {
         });
 */
 
-        self.update_graphics_data();
-
+        //self.update_graphics_data();
         self.graphics_backend.update(build_proj_matrix)
     
 
@@ -129,7 +131,7 @@ impl State {
     pub fn render(&mut self){
         let fps =  1000 / self.delta.as_millis();
 
-        self.graphics_backend.render(&self.transform_sinks, &self.loaded_models, fps)
+        self.graphics_backend.render(&self.graphics_cache, &self.loaded_models, fps)
     }
 
 }
