@@ -65,8 +65,7 @@ impl<'a> System<'a> for GravitySystem {
 
     fn on_run(&self, (transforms, mut rigid_bodies): Self::Environment, delta: Duration) {
         for i in 0..transforms.len() {
-            for j in 0..transforms.len() {
-                if i == j { continue; }
+            for j in (i+1)..transforms.len() {
                 let transform_i = transforms.get(i).unwrap();
                 let transform_j = transforms.get(j).unwrap();
 

@@ -1,7 +1,9 @@
-use crate::backend::graphics::WGPUState;
-use crate::world::World;
 use std::collections::HashMap;
 use std::time::{Instant, Duration};
+use std::sync::Arc;
+
+use crate::backend::graphics::WGPUState;
+use crate::world::World;
 use crate::world::entity::component::ComponentManager;
 use crate::world::entity::component::transform::Transform;
 use crate::backend::graphics::model::Model;
@@ -13,12 +15,15 @@ use crate::world::entity::component::camera::Camera;
 use rand_core::SeedableRng;
 use crate::world::entity::prefab::rand_tile::RandomTile;
 use cgmath::Vector3;
+use crate::backend::BackendProxy;
+use crate::backend::graphics::transform::TransformSink;
 
 pub struct State {
+    backend_proxy: BackendProxy,
     graphics_backend: WGPUState,
     world: World,
     camera: ComponentManager<Camera>,
-    instances: Vec<(ComponentManager<Transform>, &'static str)>,
+    transform_sinks: HashMap<&'static str, Vec<Arc<TransformSink>>>,
     loaded_models: HashMap<&'static str, Model>,
     delta: Duration,
     prev_instant: Instant
@@ -26,27 +31,32 @@ pub struct State {
 
 impl State {
     pub async fn new(window: &Window, vsync: bool) -> Self {
+        let graphics_backend = WGPUState::new(window, vsync).await;
+        let backend_proxy = BackendProxy::new(graphics_backend.device.clone(), graphics_backend.queue.clone());
+        
         let world_generator = RandomTile::from_entropy();
-        let world = World::new(world_generator);
+        let world = World::new(world_generator, &backend_proxy);
 
         Self {
-            graphics_backend: WGPUState::new(window, vsync).await,
+            backend_proxy,
+            graphics_backend,
             world: world.clone(),
             camera: world.query_components(true).next().unwrap(),
-            instances: Vec::new(),
+            transform_sinks: HashMap::new(),
             loaded_models: HashMap::new(),
             delta: Duration::new(0, 0),
             prev_instant: Instant::now()
         }
     }
 
+    // TODO: Use HashMap<&str, Vec<TransformSink>>
     pub fn update_graphics_data(&mut self) {
         let mut drawables = self.world.query_entities(true)
             .map(|e| (e.component::<Transform>(), e.component::<GraphicsModel>()))
             .filter(|(a, b)| a.is_some() && b.is_some())
             .map(|(a, b)| (a.unwrap(), b.unwrap()));
 
-        self.instances.clear();
+        self.transform_sinks.clear();
 
         while let Some((ref transform, ref graphics_model)) = drawables.next() {
             let obj_path = graphics_model
@@ -65,7 +75,16 @@ impl State {
                 );
             }
 
-            self.instances.push( ((*transform).clone(), obj_path));
+
+            if !self.transform_sinks.contains_key(obj_path) {
+                self.transform_sinks.insert(obj_path, Vec::new());
+            }
+
+            let mut current = self.transform_sinks.remove(obj_path).unwrap();
+        
+            current.push(transform.lock_component_for_read().sink.clone());
+
+            self.transform_sinks.insert(obj_path, current);
         }
     }
 
@@ -102,7 +121,7 @@ impl State {
 
         self.update_graphics_data();
 
-        self.graphics_backend.update(&self.instances, build_proj_matrix)
+        self.graphics_backend.update(build_proj_matrix)
     
 
     }
@@ -110,7 +129,7 @@ impl State {
     pub fn render(&mut self){
         let fps =  1000 / self.delta.as_millis();
 
-        self.graphics_backend.render(&self.instances, &self.loaded_models, fps)
+        self.graphics_backend.render(&self.transform_sinks, &self.loaded_models, fps)
     }
 
 }

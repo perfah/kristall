@@ -12,16 +12,17 @@ use crate::world::entity::component::camera::Camera;
 use cgmath::num_traits::real::Real;
 use crate::world::entity::prefab::player::Player;
 use crate::world::entity::component::rigid_body::RigidBody;
+use crate::backend::BackendProxy;
 
 const N: usize = 101;
 pub struct RandomTileSeed(pub [u8; N]);
 pub struct RandomTile(RandomTileSeed);
 
 impl Prefab for RandomTile {
-    fn apply(&self, builder: &mut EntityBuilder) {
+    fn apply(&self, builder: &mut EntityBuilder, backend_proxy: &BackendProxy) {
         let mut entities = Vec::new();
 
-        let player = Player{}.instantiate().build();
+        let player = Player{}.instantiate(backend_proxy).build();
         let player_transform: ComponentManager<Transform> = player
             .query_components(true)
             .next()
@@ -32,8 +33,8 @@ impl Prefab for RandomTile {
 
         let rand_nums = (self.0).0;
 
-        for i in 0..25 {
-            for j in 0..25 {
+        for i in 0..5 {
+            for j in 0..5 {
                 for k in 0..5 {
                     let cube = Cube {
                         pos: Vector3 {
@@ -48,7 +49,7 @@ impl Prefab for RandomTile {
                     println!("Entity pos = {:?}", cube.pos);
 
                     entities.push(cube
-                        .instantiate()
+                        .instantiate(backend_proxy)
                         .build());
                 }
             }

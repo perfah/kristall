@@ -6,23 +6,24 @@ use crate::world::entity::component::{Component, ComponentManager};
 use crate::world::entity::component::rigid_body::RigidBody;
 use cgmath::Vector3;
 use crate::world::entity::prefab::cube::Cube;
+use crate::backend::BackendProxy;
 
 pub struct Player {}
 
 impl Prefab for Player {
-    fn apply(&self, builder: &mut EntityBuilder) {
+    fn apply(&self, builder: &mut EntityBuilder, backend_proxy: &BackendProxy) {
 
         let upper = Cube{
             pos: Vector3 {x: 0.0, y: 5.0, z: 0.0},
             mass: 0.0,
             rot: false
-        }.instantiate().build();
+        }.instantiate(backend_proxy).build();
 
         let lower = Cube{
             pos: Vector3 {x: 0.0, y: 3.0, z: 0.0},
             mass: 0.0,
             rot: false
-        }.instantiate().build();
+        }.instantiate(backend_proxy).build();
 
         builder
             .with_name("player")
