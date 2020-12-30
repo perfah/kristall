@@ -287,7 +287,7 @@ impl WGPUState {
         );
     }
 
-    pub fn render(&mut self, transform_sinks: &HashMap<&'static str, Vec<Arc<TransformSink>>>, 
+    pub fn render(&mut self, graphics_cache: &HashMap<&'static str, Vec<Arc<TransformSink>>>, 
                              loaded_models: &HashMap<&'static str, Model>,
                              fps: u128) {
 
@@ -324,17 +324,14 @@ impl WGPUState {
             
             render_pass.set_pipeline(&self.render_pipeline);
 
-            for model_str in transform_sinks.keys() {
-                //if i > 2 { break; }
+            for model_str in graphics_cache.keys() {
                 let model = loaded_models.get(model_str).unwrap();
-                //render_pass.draw_model(model, &self.uniform_bind_group, i as u32 * mem::size_of::<ModelView>() as u32);
 
-                for transform_sink in transform_sinks.get(model_str).unwrap() {
+                for transform_sink in graphics_cache.get(model_str).unwrap() {
                     render_pass.draw_model(model, &self.uniform_bind_group, &transform_sink.bind_group);
                 }
             }
         }
-
         
         ui::text::render_text(&self.device, 
                               &self.queue,
