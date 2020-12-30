@@ -42,6 +42,10 @@ impl Transform {
         self.sink.update(self.to_raw());
         self
     }
+
+    pub fn flush(&self) {
+        self.sink.update(self.to_raw());
+    }
 }
 
 impl Transform {

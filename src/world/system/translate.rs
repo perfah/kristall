@@ -73,6 +73,7 @@ impl<'a> System<'a> for TranslateSystem {
                 *acc = rigid_body.net_force();
             }
 
+            transform.flush();
         }
     }
 }
