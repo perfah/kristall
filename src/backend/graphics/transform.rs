@@ -10,7 +10,7 @@ pub struct TransformSink {
 }
 
 impl TransformSink {
-    pub fn new(id: &'static str, device: Arc<Device>, queue: Arc<Queue>, bind_group_layout: &BindGroupLayout) -> TransformSink {
+    pub fn new(device: Arc<Device>, queue: Arc<Queue>, bind_group_layout: &BindGroupLayout) -> TransformSink {
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: size_of::<ModelView>() as u64,

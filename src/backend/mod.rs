@@ -19,6 +19,6 @@ impl BackendProxy {
     }
 
     pub fn new_transform_sink(&self) -> TransformSink {
-        TransformSink::new("abc", self.device.clone(), self.queue.clone(), &self.transform_bind_group_layout)
+        TransformSink::new(self.device.clone(), self.queue.clone(), &self.transform_bind_group_layout)
     }
 }
