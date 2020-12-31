@@ -56,9 +56,7 @@ pub struct WGPUState {
     proj_view_ubuff: wgpu::Buffer,
     uniform_bind_group_layout: wgpu::BindGroupLayout,
     uniform_bind_group: wgpu::BindGroup,
-    size: winit::dpi::PhysicalSize<u32>,
-    instances: Vec<ModelView>,
-    instance_buffer: wgpu::Buffer
+    size: winit::dpi::PhysicalSize<u32>
 }
 
 impl WGPUState {
@@ -156,22 +154,6 @@ impl WGPUState {
         
         let depth_texture = texture::Texture::create_depth_texture(&device, &sc_desc, "depth_texture");
 
-        let render_pipeline_layout =
-            device.create_pipeline_layout( &wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let instances = Vec::new();
-        
-        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Instance Buffer"),
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
-            size: 10000 * mem::size_of::<ModelView>() as u64,
-            mapped_at_creation: false
-        });
-
         let mut compiler = shaderc::Compiler::new().unwrap();
 
         let vs_src = include_str!("../../../res/shader/geometry.vert");
@@ -187,9 +169,9 @@ impl WGPUState {
         let fs_module = device.create_shader_module(fs_data);
 
         let device = Arc::new(device);
+        
         let transform_bind_group_layout = crate::backend::graphics::transform::bind_group_layout(&device);
 
-        
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
@@ -253,9 +235,7 @@ impl WGPUState {
             proj_view_ubuff,
             depth_texture,
             size,
-            texture_bind_group_layout,
-            instances,
-            instance_buffer
+            texture_bind_group_layout
         }
     }
 
