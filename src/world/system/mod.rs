@@ -60,6 +60,8 @@ pub trait System<'a>: Send + Sync
             if let Ok(res) = self.on_freeze() {
                 self.on_run(res, delta);
             }
+
+            std::thread::sleep_ms(10);
         }
     }
 }
