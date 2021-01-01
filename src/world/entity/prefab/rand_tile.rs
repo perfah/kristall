@@ -8,7 +8,7 @@ use cgmath::Vector3;
 use crate::world::entity::builder::EntityBuilder;
 use crate::world::entity::component::ComponentManager;
 use crate::world::entity::component::transform::Transform;
-use crate::world::entity::component::camera::Camera;
+use crate::world::entity::component::camera::{Camera, CameraPerspective};
 use cgmath::num_traits::real::Real;
 use crate::world::entity::prefab::player::Player;
 use crate::world::entity::component::rigid_body::RigidBody;
@@ -32,17 +32,18 @@ impl Prefab for RandomTile {
 
         let rand_nums = (self.0).0;
 
-        for i in 0..25 {
-            for j in 0..25 {
+        for i in 0..5 {
+            for j in 0..5 {
                 for k in 0..5 {
                     let cube = Cube {
                         pos: Vector3 {
-                            x: 4.0 + i as f32 * 2.0,
+                            x: 4.0 + i as f32 * 5.0,
                             y: rand_nums[i+j] as f32 / 100.0 + k as f32 * 10f32,
-                            z: 4.0 + j as f32 * 5.0
+                            z: 4.0 + j as f32 * 10.0
                         },
-                        mass: 5.0,
-                        rot: false
+                        mass: 900000.0,
+                        rot: false,
+                        player: false
                     };
 
                     println!("Entity pos = {:?}", cube.pos);
@@ -55,14 +56,13 @@ impl Prefab for RandomTile {
         }
 
         builder
-            .with_component(Camera::new_third_person(player_transform))
             .with_children(&mut entities);
     }
 }
 
 impl Default for RandomTileSeed {
     fn default() -> RandomTileSeed {
-        RandomTileSeed([0; N])
+        RandomTileSeed([0; N])  
     }
 }
 
