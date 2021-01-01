@@ -38,41 +38,63 @@ fn main() {
     let mut state = block_on(State::new(&window, false));
     state.update_graphics_data();
 
+    let mut window_focused = false;
+
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::WindowEvent {
                 ref event,
                 window_id,
-            } if window_id == window.id() => if !state.input(event) {
-                    match event {
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput {
-                            input,
-                            ..
-                        } => {
-                            match input {
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                } => *control_flow = ControlFlow::Exit,
-                                _ => {}
-                            }
-                        },
-                        WindowEvent::Resized(physical_size) => {
-                            state.resize(*physical_size);
+            } => {
+                let selected = window_id == window.id();
+
+                match event {
+                    WindowEvent::CloseRequested if selected => *control_flow = ControlFlow::Exit,
+                    WindowEvent::KeyboardInput {
+                        input,
+                        ..
+                    } if selected => {
+                        match input {
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::E),
+                                ..
+                            } => *control_flow = ControlFlow::Exit,
+                            KeyboardInput {
+                                state: ElementState::Pressed,
+                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                ..
+                            } => state.set_escape_status(&window, true),
+                            _ => {}
                         }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &mut so w have to dereference it twice
-                            state.resize(**new_inner_size);
-                        },
-                        _ => {}
+                    },
+                    WindowEvent::Resized(physical_size) if selected => {
+                        state.resize(*physical_size, &window);
                     }
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } if selected  => {
+                        // new_inner_size is &mut so w have to dereference it twice
+                        state.resize(**new_inner_size, &window);
+                    },
+                    WindowEvent::Focused(focused) => {
+                        window_focused = *focused;
+                        state.set_escape_status(&window, !window_focused);
+                    },
+                    WindowEvent::CursorEntered {..} => {
+                        state.set_escape_status(&window, false);
+                    },
+                    WindowEvent::CursorLeft {..} => {
+                        state.set_escape_status(&window, true);
+                    },
+                    _ => {}
+                }
             },
             Event::RedrawRequested(_) => {
                 state.update();
                 state.render();
-            }
+            },
+            Event::DeviceEvent{event, ..} if window_focused => {
+                state.input(&event, &window);
+            },
             Event::MainEventsCleared => {
                 // RedrawRequested will only trigger once, unless we manually
                 // request it.
@@ -81,4 +103,8 @@ fn main() {
             _ => {}
         }
     });
+}
+
+fn handle_window_selection_change(window: &Window, focused: bool) {
+
 }
