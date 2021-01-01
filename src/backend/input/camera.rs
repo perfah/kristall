@@ -154,7 +154,7 @@ impl CameraController for MouseCameraController {
         match perspective {
             CameraPerspective::ThirdPersonView {ref mut angle_horiz, ref mut angle_vert, ref mut distance, .. } => {
                 // Mouse movement:
-                *angle_horiz -= (diff_x * self.mouse_sensitivity * delta.as_millis() as f64) as f32;
+                *angle_horiz += (diff_x * self.mouse_sensitivity * delta.as_millis() as f64) as f32;
                 *angle_vert -= (diff_y  * self.mouse_sensitivity * delta.as_millis() as f64) as f32;
 
                 // :Scoll:
