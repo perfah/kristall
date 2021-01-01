@@ -13,3 +13,4 @@ Cargo.lock
 /res/opt-out
 /res/font/*
 /.vscode/
+*perf*
