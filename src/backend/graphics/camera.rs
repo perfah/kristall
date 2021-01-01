@@ -1,148 +1,111 @@
+use std::time::Duration;
+
 use crate::backend::graphics::OPENGL_TO_WGPU_MATRIX;
-use winit::event::{WindowEvent, ElementState, VirtualKeyCode, KeyboardInput};
-use cgmath::InnerSpace;
+use winit::window::Window;
+use winit::event::{DeviceEvent, ElementState, VirtualKeyCode, KeyboardInput};
+use cgmath::{Point3, Vector3, EuclideanSpace, InnerSpace};
+use crate::world::entity::component::{Component, ComponentManager};
+use crate::world::entity::component::transform::Transform;
+use crate::backend::input::camera::CameraController;
+
+use crate::world::entity::component::camera::Camera as CameraComponent;
 
 pub enum CameraPerspective {
     FirstPersonView,
-    ThirdPersonView{
-        // Change to TransformComponent
-        target: cgmath::Point3<f32>,
+    ThirdPersonView {
+        distance: f32,
+        angle_horiz: f32,
+        angle_vert: f32
+    },
+    BirdsEyeView
+}
+
+impl CameraPerspective {
+    pub fn new_third_person() -> CameraPerspective {
+        CameraPerspective::ThirdPersonView {
+            distance: 25f32,
+            angle_horiz: 0f32,
+            angle_vert: 0f32
+        }
     }
 }
 
+
 pub struct Camera {
-    pub perspective: CameraPerspective,
-    pub controller: CameraController,
-    pub eye: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
-    pub aspect: f32,
-    pub fovy: f32,
-    pub znear: f32,
-    pub zfar: f32,
+    component: ComponentManager<CameraComponent>,
+    target: ComponentManager<Transform>,
+    aspect: f32,
+    fovy: f32,
+    znear: f32,
+    zfar: f32,
 }
 
 impl Camera {
-    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        match self.perspective {
-            CameraPerspective::ThirdPersonView { target }=> {
-                let view = cgmath::Matrix4::look_at(self.eye, target, self.up);
-                let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-                return OPENGL_TO_WGPU_MATRIX * proj * view;
+    pub fn new(component: ComponentManager<CameraComponent>, 
+               target: ComponentManager<Transform>) -> Camera {
+        Camera {
+            component,
+            target,
+            aspect: 10 as f32 / 10 as f32,
+            fovy: 45.0,
+            znear: 0.1,
+            zfar: 100.0,
+        }
+    }
+
+
+    fn get_view(&self) -> cgmath::Matrix4<f32> {
+        let target = self.target.peek(|transform| Point3::from_vec(transform.pos)).unwrap();
+        let perspective = &self.component.lock_component_for_read().perspective;
+
+        match perspective {
+            CameraPerspective::FirstPersonView => unimplemented!(),
+            CameraPerspective::ThirdPersonView { distance, angle_horiz, angle_vert } => {
+                let C = 2.0 * std::f32::consts::PI;
+        
+                let dir = Vector3::new(
+                    f32::cos(angle_horiz % C) * f32::cos(angle_vert % C),
+                    f32::sin(angle_vert % C),
+                    f32::sin(angle_horiz % C) * f32::cos(angle_vert % C)
+                ).normalize();
+
+                let eye = target - dir * (*distance);
+                
+                cgmath::Matrix4::look_at(
+                    eye, 
+                    target, 
+                    cgmath::Vector3::unit_y() * f32::signum(f32::cos(angle_vert % C)))
             },
+            CameraPerspective::BirdsEyeView => unimplemented!(),
             _ => unimplemented!()
         }
     }
 
-    pub fn update(&mut self) {
-        match self.perspective {
-            CameraPerspective::ThirdPersonView {target} => {
-                let forward = target - self.eye;
-                let forward_norm = forward.normalize();
-                let forward_mag = forward.magnitude();
-
-                // Prevents glitching when camera gets too close to the
-                // center of the scene.
-                if self.controller.is_forward_pressed && forward_mag > self.controller.speed {
-                    self.eye += forward_norm * self.controller.speed;
-                }
-                if self.controller.is_backward_pressed {
-                    self.eye -= forward_norm * self.controller.speed;
-                }
-
-                let right = forward_norm.cross(self.up);
-
-                // Redo radius calc in case the up/ down is pressed.
-                let forward = target - self.eye;
-                let forward_mag = forward.magnitude();
-
-                if self.controller.is_right_pressed {
-                    // Rescale the distance between the target and eye so
-                    // that it doesn't change. The eye therefore still
-                    // lies on the circle made by the target and eye.
-                    self.eye = target - (forward + right * self.controller.speed).normalize() * forward_mag;
-                }
-                if self.controller.is_left_pressed {
-                    self.eye = target - (forward - right * self.controller.speed).normalize() * forward_mag;
-                }
-            },
-            _ => {}
-        }
+    pub fn view_proj_matrix(&self) -> cgmath::Matrix4<f32> {
+        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
+        let view = self.get_view();
+        OPENGL_TO_WGPU_MATRIX * proj * view
     }
 
-    pub fn process_events(&mut self, event: &WindowEvent) -> bool {
-        self.controller.process_events(event)
+    pub fn process_events(&mut self, event: &DeviceEvent, window: &Window) -> bool {
+        let controller = &mut self.component.lock_component_for_write().controller;
+        controller.on_incoming_event(event, window)
+    }
+    
+    pub fn update(&mut self, delta: Duration) {
+        let CameraComponent { ref mut perspective, ref mut controller } = *self.component.lock_component_for_write();
+        controller.on_update_perspective(perspective, delta);
+    }
+
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>, window: &Window) {
+        let controller = &mut self.component.lock_component_for_write().controller;
+
+        self.aspect = new_size.width as f32 / new_size.height as f32;
+        controller.on_resize(window);
+    }
+
+    pub fn set_escape_status(&mut self, window: &Window, escape_status: bool) {
+        let controller = &mut self.component.lock_component_for_write().controller;
+        controller.on_escape_status_change(window, escape_status)
     }
 }
-
-pub struct CameraController {
-    pub speed: f32,
-    pub is_up_pressed: bool,
-    pub is_down_pressed: bool,
-    pub is_forward_pressed: bool,
-    pub is_backward_pressed: bool,
-    pub is_left_pressed: bool,
-    pub is_right_pressed: bool,
-}
-
-impl CameraController {
-    pub fn new(speed: f32) -> Self {
-        Self {
-            speed,
-            is_up_pressed: false,
-            is_down_pressed: false,
-            is_forward_pressed: false,
-            is_backward_pressed: false,
-            is_left_pressed: false,
-            is_right_pressed: false,
-        }
-    }
-
-    pub fn process_events(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::KeyboardInput {
-                input: KeyboardInput {
-                    state,
-                    virtual_keycode: Some(keycode),
-                    ..
-                },
-                ..
-            } => {
-                let is_pressed = *state == ElementState::Pressed;
-                match keycode {
-                    VirtualKeyCode::Space => {
-                        self.is_up_pressed = is_pressed;
-                        true
-                    }
-                    VirtualKeyCode::LShift => {
-                        self.is_down_pressed = is_pressed;
-                        true
-                    }
-                    VirtualKeyCode::W | VirtualKeyCode::Up => {
-                        self.is_forward_pressed = is_pressed;
-                        true
-                    }
-                    VirtualKeyCode::A | VirtualKeyCode::Left => {
-                        self.is_left_pressed = is_pressed;
-                        true
-                    }
-                    VirtualKeyCode::S | VirtualKeyCode::Down => {
-                        self.is_backward_pressed = is_pressed;
-                        true
-                    }
-                    VirtualKeyCode::D | VirtualKeyCode::Right => {
-                        self.is_right_pressed = is_pressed;
-                        true
-                    }
-                    _ => false,
-                }
-            }
-            _ => false,
-        }
-    }
-}
-
-
-
-
-
-

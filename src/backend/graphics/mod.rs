@@ -11,7 +11,7 @@ use winit::{
 use std::{mem, iter};
 use model::DrawModel;
 use crate::backend::graphics::texture::Texture;
-use crate::backend::graphics::camera::{Camera, CameraController, CameraPerspective};
+use crate::backend::graphics::camera::{Camera, CameraPerspective};
 use crate::backend::graphics::uniform::{Uniforms, TransformRaw};
 use crate::backend::graphics::model::Vertex;
 use crate::backend::graphics::model::Model;
@@ -280,7 +280,10 @@ impl WGPUState {
                              loaded_models: &HashMap<&'static str, Model>,
                              fps: u128) {
         
-        let frame = self.swap_chain.get_current_frame().unwrap();
+        let optional_frame = self.swap_chain.get_current_frame();
+        if optional_frame.is_err() { return; }
+
+        let frame = optional_frame.unwrap();
 
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
