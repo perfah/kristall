@@ -12,6 +12,8 @@ pub struct Transform {
     pub rot: Quaternion<f32>,
     pub rot_vel: Quaternion<f32>,
     pub rot_acc: Quaternion<f32>,
+
+    pub frozen: bool
 }
 
 impl Transform {
@@ -23,8 +25,15 @@ impl Transform {
             acc: Vector3 {x: 0.0, y: 0.0, z: 0.0},
             rot: Quaternion::new(0.0, 0.0, 0.0, 0.0),
             rot_vel: Quaternion::new(0.0, 0.0, 0.0, 0.0),
-            rot_acc: Quaternion::new(0.0, 0.0, 0.0, 0.0)
+            rot_acc: Quaternion::new(0.0, 0.0, 0.0, 0.0),
+            frozen: false
         }
+    }
+
+    pub fn frozen() -> Transform {
+        let mut transform = Transform::new();
+        transform.frozen = true;
+        transform
     }
 
     pub fn with_position(mut self, pos: Vector3<f32>) -> Self{

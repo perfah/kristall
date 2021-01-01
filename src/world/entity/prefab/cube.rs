@@ -19,7 +19,8 @@ impl Prefab for Cube {
     fn apply(&self, builder: &mut EntityBuilder) {
         let builder = builder
             .with_name("cubeyboi")
-            .with_component(Transform::new()
+            .with_component(
+                if self.player { Transform::new() } else { Transform::frozen() }
                 .with_position(self.pos.clone()))
             .with_component(GraphicsModel::from("/home/perfah/Programming/kristall/res/model/cube.obj"))
             .with_component(RigidBody::new(self.mass));

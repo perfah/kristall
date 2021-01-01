@@ -79,8 +79,14 @@ impl<'a> System<'a> for GravitySystem {
                 let r = dist_i_to_j.magnitude().abs() as f64;
                 
                 let force = G * (mass_i * mass_j) / (r as f64 * r as f64);
-                rigid_bodies.get_mut(i).unwrap().cast_force("gravity", dist_i_to_j.normalize() * force as f32);
-                rigid_bodies.get_mut(j).unwrap().cast_force("gravity", dist_j_to_i.normalize() * force as f32);
+
+                if !transforms.get(i).unwrap().frozen {
+                    rigid_bodies.get_mut(i).unwrap().cast_force("gravity", dist_i_to_j.normalize() * force as f32);
+                }
+                
+                if !transforms.get(j).unwrap().frozen {
+                    rigid_bodies.get_mut(j).unwrap().cast_force("gravity", dist_j_to_i.normalize() * force as f32);
+                }
             }
         }
 

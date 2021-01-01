@@ -41,7 +41,7 @@ impl Prefab for RandomTile {
                             y: rand_nums[i+j] as f32 / 100.0 + k as f32 * 10f32,
                             z: 4.0 + j as f32 * 10.0
                         },
-                        mass: 900000.0,
+                        mass: 9000000.0,
                         rot: false,
                         player: false
                     };

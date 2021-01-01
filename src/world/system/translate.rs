@@ -55,6 +55,9 @@ impl<'a> System<'a> for TranslateSystem {
         let delta = delta.as_secs_f32();
 
         for (mut transform, opt_rigid_body) in environment {
+
+            if transform.frozen { continue; }
+
             let Transform {
                 ref mut pos,
                 ref mut vel,
