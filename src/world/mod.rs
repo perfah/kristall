@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::world::entity::component::{Component, ComponentManager, ComponentIterator, FilteredComponentIterator};
 use crate::world::entity::builder::EntityBuilder;
 use crate::world::system::translate::TranslateSystem;
+use crate::world::system::input::InputSystem;
 use std::thread;
 use crate::world::system::{System, start_system_in_parallel};
 use crate::world::entity::prefab::cube::Cube;
@@ -31,6 +32,7 @@ impl World {
 
         start_system_in_parallel::<TranslateSystem, Entity>(root.clone());
         start_system_in_parallel::<GravitySystem, Entity>(root.clone());
+        start_system_in_parallel::<InputSystem, Entity>(root.clone());
 
         World { root }
     }

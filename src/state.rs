@@ -11,6 +11,7 @@ use crate::world::entity::component::model::GraphicsModel;
 use winit::event::DeviceEvent;
 use crate::backend::graphics::camera::Camera;
 use crate::world::entity::component::camera::Camera as CameraComponent;
+use crate::world::entity::component::controller::Controller;
 use rand_core::SeedableRng;
 use crate::world::entity::prefab::rand_tile::RandomTile;
 use cgmath::Vector3;
@@ -84,7 +85,17 @@ impl State {
     }
 
     pub fn input(&mut self, event: &DeviceEvent, window: &Window) -> bool {
-        self.camera.process_events(event, &window)
+        if self.camera.process_events(event, &window) { return true; }
+        else if self.world.query_entities(true)
+                          .map(|entity| entity.component::<Controller>())
+                          .filter(|controller| controller.is_some())
+                          .map(|controller| controller.unwrap())
+                          .map(|component| {
+                            let mut controller = component.lock_component_for_write();
+                            controller.input_source.on_incoming_event(event)
+                          })
+                          .any(|result| result) { return true }
+        else { false }
     }
 
     pub fn update(&mut self) {
@@ -94,14 +105,6 @@ impl State {
 
         let build_proj_matrix = self.camera.view_proj_matrix();
         
-        let mut play: ComponentManager<Transform> = self.world.query_entity_by_name("player", true).next().unwrap().query_components(true).next().unwrap();
-        play.peek_mut(|transform| transform.acc = Vector3{
-            x: 2.0 * (rand::random::<f32>() - 0.5),
-            y: 0.0,
-            z: 2.0 * (rand::random::<f32>() - 0.5)
-        });
-
-
         self.update_graphics_data();
 
         self.graphics_backend.update(&self.instances, build_proj_matrix);

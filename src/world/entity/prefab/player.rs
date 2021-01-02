@@ -5,6 +5,8 @@ use crate::world::entity::component::transform::Transform;
 use crate::world::entity::component::camera::{Camera, CameraPerspective};
 use crate::world::entity::component::{Component, ComponentManager};
 use crate::world::entity::component::rigid_body::RigidBody;
+use crate::world::entity::component::controller::Controller;
+use crate::backend::input::entity::{WASDEntityController, InputAccelerationMethod};
 use cgmath::Vector3;
 use crate::world::entity::prefab::cube::Cube;
 
@@ -15,10 +17,11 @@ impl Prefab for Player {
 
         let upper = Cube{
             pos: Vector3 {x: 0.0, y: 3.0, z: 0.0},
-            mass: 0.0,
+            mass: 5.0,
             rot: false,
             player: true
-        }.instantiate().build();
+        }.instantiate()
+        .with_component(Controller::new(WASDEntityController::new(InputAccelerationMethod::Force(10f32)))).build();
 
         let lower = Cube{
             pos: Vector3 {x: 0.0, y: 0.0, z: 0.0},
