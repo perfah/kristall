@@ -18,14 +18,10 @@ pub struct RandomTileSeed(pub [u8; N]);
 pub struct RandomTile(RandomTileSeed);
 
 impl Prefab for RandomTile {
-    fn apply(&self, builder: &mut EntityBuilder) {
+    fn apply(&self, builder: EntityBuilder) -> EntityBuilder {
         let mut entities = Vec::new();
 
-        let player = Player{}.instantiate().build();
-        let player_transform: ComponentManager<Transform> = player
-            .query_components(true)
-            .next()
-            .unwrap();
+        let player = Player{}.instantiate();
 
         entities.push(player);
 
@@ -47,15 +43,14 @@ impl Prefab for RandomTile {
 
                     println!("Entity pos = {:?}", cube.pos);
 
-                    entities.push(cube
-                        .instantiate()
-                        .build());
+                    entities.push(cube.instantiate());
                 }
             }
         }
 
         builder
-            .with_children(&mut entities);
+            .with_name("RandomTile world")
+            .with_children(entities)
     }
 }
 

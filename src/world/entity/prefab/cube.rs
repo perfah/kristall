@@ -16,8 +16,8 @@ pub struct Cube {
 }
 
 impl Prefab for Cube {
-    fn apply(&self, builder: &mut EntityBuilder) {
-        let builder = builder
+    fn apply(&self, builder: EntityBuilder) -> EntityBuilder {
+        let mut builder = builder
             .with_name("cubeyboi")
             .with_component(
                 if self.player { Transform::new() } else { Transform::frozen() }
@@ -26,12 +26,14 @@ impl Prefab for Cube {
             .with_component(RigidBody::new(self.mass));
 
         if self.player { 
-            builder.with_component(
+            builder = builder.with_component(
                 Camera::new(
                     CameraPerspective::ThirdPersonView{ distance: 25f32, angle_horiz: 0f32, angle_vert: 0f32 },
                     MouseCameraController::new(0.001f64, true)
                  )
             );
         }
+
+        builder
     }
 }

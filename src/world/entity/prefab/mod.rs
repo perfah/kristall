@@ -7,10 +7,8 @@ pub mod rand_tile;
 
 pub trait Prefab {
     fn instantiate(&self) -> EntityBuilder {
-        let mut builder = EntityBuilder::new();
-        self.apply(&mut builder);
-        builder
+        self.apply(EntityBuilder::new())
     }
 
-    fn apply(&self, builder: &mut EntityBuilder);
+    fn apply(&self, builder: EntityBuilder) -> EntityBuilder;
 }

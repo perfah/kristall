@@ -25,9 +25,7 @@ pub struct World {
 
 impl World {
     pub fn new<T: Prefab>(prefab: T) -> Self {
-        let mut world_builder = EntityBuilder::new();
-        prefab.apply(&mut world_builder);
-
+        let world_builder = prefab.instantiate();
         let root = world_builder.build();
 
         start_system_in_parallel::<TranslateSystem, Entity>(root.clone());
@@ -36,12 +34,6 @@ impl World {
 
         World { root }
     }
-
-    pub fn update(&mut self) {
-
-    }
-
-
 }
 
 impl Clone for World {

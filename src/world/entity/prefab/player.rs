@@ -13,26 +13,17 @@ use crate::world::entity::prefab::cube::Cube;
 pub struct Player {}
 
 impl Prefab for Player {
-    fn apply(&self, builder: &mut EntityBuilder) {
+    fn apply(&self, builder: EntityBuilder) -> EntityBuilder {
+        let upper = Cube{ pos: Vector3 {x: 0.0, y: 3.0, z: 0.0}, mass: 5.0, rot: false, player: true }
+            .instantiate()
+            .with_component(Controller::new(WASDEntityController::new(InputAccelerationMethod::Force(10f32))));
 
-        let upper = Cube{
-            pos: Vector3 {x: 0.0, y: 3.0, z: 0.0},
-            mass: 5.0,
-            rot: false,
-            player: true
-        }.instantiate()
-        .with_component(Controller::new(WASDEntityController::new(InputAccelerationMethod::Force(10f32)))).build();
-
-        let lower = Cube{
-            pos: Vector3 {x: 0.0, y: 0.0, z: 0.0},
-            mass: 0.0,
-            rot: false,
-            player: false
-        }.instantiate().build();
+        let lower = Cube{ pos: Vector3 {x: 0.0, y: 0.0, z: 0.0}, mass: 0.0, rot: false, player: false }
+            .instantiate();
 
         builder
             .with_name("player")
             .with_child(upper)
-            .with_child(lower);
+            .with_child(lower)
     }
 }

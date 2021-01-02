@@ -7,59 +7,65 @@ use std::sync::{Arc, Mutex, RwLock};
 use futures::StreamExt;
 
 pub struct EntityBuilder {
-    name: &'static str,
-    children: Vec<Entity>,
+    entity: Entity,
     components: HashMap<TypeId, Arc<RwLock<Box<dyn Component>>>>
 }
 
 impl EntityBuilder{
     pub fn new() -> Self {
         EntityBuilder{
-            name: "Unnamed",
-            children: Vec::new(),
-            components: HashMap::new()
+            entity: Entity::new("Unnamed"),
+            components:  HashMap::new()
         }
     }
 
-    pub fn with_name(&mut self, name: &'static str) -> &mut Self {
-        self.name = name;
+    pub fn with_name(self, name: &'static str) -> Self {
+        if let Ok(mut current_name) = self.entity.name.lock() {
+            *current_name = String::from(name);
+        }
         self
     }
 
-    pub fn with_child(&mut self, child: Entity) -> &mut Self {
-        self.children.push(child);
+    pub fn with_child<T: Into<EntityBuilder>>(self, child: T) -> Self {
+        if let Ok(mut children) = self.entity.children.lock() {
+            children.push(child.into().build());
+        }
+        
         self
     }
 
-    pub fn with_children(&mut self, children: &mut Vec<Entity>) -> &mut Self {
-        self.children.append(children);
+    pub fn with_children<T: Into<EntityBuilder>>(self, mut children: Vec<T>) -> Self {
+        let mut built_children: Vec<Entity> = children
+            .drain(..)
+            .map(|child| child.into().build())
+            .collect::<Vec<Entity>>(); 
+        
+        if let Ok(mut children) = self.entity.children.lock() {
+            children.append(&mut built_children);
+        }
+
         self
     }
 
-    pub fn with_component<C: Component>(&mut self, component: C) -> &mut Self {
+    pub fn with_component<C: Component>(mut self, component: C) -> Self {
         self.components.insert(TypeId::of::<C>(), Arc::new(RwLock::new(Box::new(component))));
         self
     }
 
-    pub fn build(&self) -> Entity {
-        println!("Building entity '{} (w.{} children)", self.name, self.children.len());
-
-        Entity {
-            enabled: Arc::new(Mutex::new(true)),
-            invalidated: Arc::new(Mutex::new(false)),
-            name: Arc::new(Mutex::new(self.name.to_string())),
-            children: Arc::new(Mutex::new(self.children.clone())),
-            components: Arc::new(self.components.clone())
-        }
+    pub fn build(mut self) -> Entity {
+        self.entity.components = Arc::new(self.components);
+        self.entity
     }
 }
 
 impl From<Entity> for EntityBuilder {
     fn from(entity: Entity) -> Self {
-        Self {
-            name: "",
-            children: vec![],
-            components: (*entity.components).clone()
+        EntityBuilder{
+            entity: entity.clone(),
+            components: entity.components
+                .iter()
+                .map(|(a,b)| (a.clone(), b.clone()))
+                .collect::<HashMap<_,_>>()
         }
     }
 }
