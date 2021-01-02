@@ -13,7 +13,7 @@ impl RigidBody{
         RigidBody { mass, forces: HashMap::new() }
     }
 
-    pub fn cast_force(&mut self, force_desc: &'static str, mut force: Vector3<f32>) {
+    pub fn commit_force(&mut self, force_desc: &'static str, mut force: Vector3<f32>) {
         if f32::is_nan(force.x) { force.x = 0.0; }
         if f32::is_nan(force.y) { force.y = 0.0; }
         if f32::is_nan(force.z) { force.z = 0.0; }

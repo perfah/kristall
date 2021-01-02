@@ -17,6 +17,7 @@ use crate::world::system::translate::TranslateSystem;
 
 pub mod translate;
 pub mod gravity;
+pub mod input;
 
 type SysEnvComponent<'a, C> = ComponentReadAccess<'a, C>;
 type SysEnvComponentMut<'a, C> = ComponentWriteAccess<'a, C>;

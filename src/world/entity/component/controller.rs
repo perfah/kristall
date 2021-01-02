@@ -1,31 +1,28 @@
-use crate::world::entity::component::Component;
+use std::time::Duration;
 
-pub trait InputSource: Send + Sync {
-    fn handle_event(&self, ) -> bool;
-}
+use crate::world::entity::Entity;
+use crate::world::entity::component::Component;
+use crate::backend::input::entity::EntityController;
 
 pub struct Controller {
-    input_source: Box<dyn InputSource>
+    pub input_source: Box<dyn EntityController>,
+    
 }
 
 impl Controller {
-    pub fn new(input_source: Box<dyn InputSource>) -> Self {
+    pub fn new<T: 'static + EntityController>(controller: T) -> Self {
         Self {
-            input_source
+            input_source: Box::new(controller)
         }
+    }
+
+    pub fn update(&self, entity: &Entity, delta: Duration) {
+        self.input_source.update_entity(entity, delta);
     }
 }
 
 impl Component for Controller {
     fn enabled(&self) -> bool {
-        unimplemented!()
-    }
-}
-
-pub struct WASDController;
-
-impl InputSource for WASDController {
-    fn handle_event(&self) -> bool {
         unimplemented!()
     }
 }

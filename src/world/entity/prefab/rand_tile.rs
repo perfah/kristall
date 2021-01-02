@@ -27,7 +27,6 @@ impl Prefab for RandomTile {
             .next()
             .unwrap();
 
-
         entities.push(player);
 
         let rand_nums = (self.0).0;
