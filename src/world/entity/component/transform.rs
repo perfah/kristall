@@ -9,9 +9,9 @@ pub struct Transform {
     pub vel: Vector3<f32>,
     pub acc: Vector3<f32>,
 
-    pub rot: Quaternion<f32>,
-    pub rot_vel: Quaternion<f32>,
-    pub rot_acc: Quaternion<f32>,
+    pub rot: Vector3<f32>,
+    pub rot_vel: Vector3<f32>,
+    pub rot_acc: Vector3<f32>,
 
     pub frozen: bool
 }
@@ -23,9 +23,9 @@ impl Transform {
             scale: Vector3 {x: 1.0, y: 1.0, z: 1.0},
             vel: Vector3 {x: 0.0, y: 0.0, z: 0.0},
             acc: Vector3 {x: 0.0, y: 0.0, z: 0.0},
-            rot: Quaternion::new(0.0, 0.0, 0.0, 0.0),
-            rot_vel: Quaternion::new(0.0, 0.0, 0.0, 0.0),
-            rot_acc: Quaternion::new(0.0, 0.0, 0.0, 0.0),
+            rot: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+            rot_vel: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+            rot_acc: Vector3 {x: 0.1, y: 0.1, z: 0.1},
             frozen: false
         }
     }
@@ -49,10 +49,14 @@ impl Transform {
 
 impl Transform {
     pub fn to_raw(&self) -> TransformRaw {
+        let c = 2.0 * std::f32::consts::PI;
+
         TransformRaw {
             model: (
                 cgmath::Matrix4::from_translation(self.pos) *
-                cgmath::Matrix4::from(self.rot)
+                cgmath::Matrix4::from_angle_x(cgmath::Rad(self.rot.x % c)) *
+                cgmath::Matrix4::from_angle_y(cgmath::Rad(self.rot.y % c)) *
+                cgmath::Matrix4::from_angle_z(cgmath::Rad(self.rot.z % c))
             ).into(),
         }
     }
