@@ -21,7 +21,7 @@ pub struct GravitySystem {
 }
 
 impl<'a> System<'a> for GravitySystem {
-    type Environment = (Vec<SysEnvComponent<'a, Transform>>, Vec<SysEnvComponent<'a, RigidBody>>);
+    type Environment = (Vec<SysEnvComponent<'a, Transform>>, Vec<SysEnvComponentMut<'a, RigidBody>>);
 
     fn new() -> Self{
         Self {
