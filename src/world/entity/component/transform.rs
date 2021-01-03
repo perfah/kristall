@@ -51,6 +51,12 @@ impl Transform {
     pub fn with_offset(mut self, offset: &Transform) -> Self {
         self.pos += offset.pos;
         self.rot += offset.rot;
+
+        // TODO: Check if this is the way to do it:
+        self.scale.x *= offset.scale.x;
+        self.scale.y *= offset.scale.y;
+        self.scale.z *= offset.scale.z;
+        
         self
     }
 }
