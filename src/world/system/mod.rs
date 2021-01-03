@@ -13,9 +13,8 @@ use failure::_core::time::Duration;
 use std::time::Instant;
 use crate::world::entity::builder::EntityBuilder;
 use crate::world::entity::component::transform::Transform;
-use crate::world::system::translate::TranslateSystem;
 
-pub mod translate;
+pub mod integrate;
 pub mod gravity;
 pub mod input;
 
