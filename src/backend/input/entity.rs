@@ -48,20 +48,29 @@ impl EntityController for WASDEntityController {
         
         match self.acc_method {
             InputAccelerationMethod::Force(magnitude) => {
-                let rigid_body = entity.component::<RigidBody>().unwrap();
-                (*rigid_body.lock_component_for_write()).commit_force("input", Vector3::<f32> { 
-                    x: dir_x * magnitude, 
-                    y: dir_y * magnitude,
-                    z: dir_z * magnitude
-                });
+                if let Some(rigid_body) = entity.component::<RigidBody>() {
+                    (*rigid_body.lock_component_for_write()).commit_force("input", Vector3::<f32> { 
+                        x: dir_x * magnitude, 
+                        y: dir_y * magnitude,
+                        z: dir_z * magnitude
+                    });
+                }
+                else {
+                    println!("Warning: Expected 'RigidBody' component as controller is configured to use InputAccelerationMethod::Force.")
+                }
             },
             InputAccelerationMethod::Velocity(velocity) => {
-                let transform = entity.component::<Transform>().unwrap();
-                let Transform { ref mut vel, .. } = *transform.lock_component_for_write();
+                
+                if let Some(transform) = entity.component::<Transform>() {
+                    let Transform { ref mut vel, .. } = *transform.lock_component_for_write();
 
-                vel.x = dir_x * velocity;
-                vel.y = dir_y * velocity;
-                vel.z = dir_z * velocity;
+                    vel.x = dir_x * velocity;
+                    vel.y = dir_y * velocity;
+                    vel.z = dir_z * velocity;
+                }
+                else {
+                    println!("Warning: Expected 'Transform' component as controller is configured to use InputAccelerationMethod::Velocity.")
+                }
             }
         }
     }
