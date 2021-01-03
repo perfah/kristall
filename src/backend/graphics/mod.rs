@@ -1,4 +1,4 @@
-pub mod transform;
+pub mod model_view;
 pub mod proj;
 pub mod texture;
 pub mod camera;
@@ -13,7 +13,7 @@ use std::{mem, iter};
 use std::sync::Arc;
 use std::time::{Instant, Duration};
 use model::DrawModel;
-use crate::backend::graphics::transform::ModelView;
+use crate::backend::graphics::model_view::ModelView;
 use crate::backend::graphics::texture::Texture;
 use crate::backend::graphics::camera::{Camera, CameraPerspective};
 use crate::backend::graphics::proj::Uniforms;
@@ -169,7 +169,7 @@ impl WGPUState {
 
         let device = Arc::new(device);
         
-        let transform_bind_group_layout = crate::backend::graphics::transform::bind_group_layout(&device);
+        let transform_bind_group_layout = crate::backend::graphics::model_view::bind_group_layout(&device);
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

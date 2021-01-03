@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::world::entity::component::{Component};
-use crate::backend::graphics::transform::{ModelView};
+use crate::backend::graphics::model_view::{ModelView};
 use failure::_core::any::Any;
 use cgmath::{Vector3, Quaternion};
 use crate::backend::BackendProxy;
@@ -56,7 +56,7 @@ impl Transform {
         self.scale.x *= offset.scale.x;
         self.scale.y *= offset.scale.y;
         self.scale.z *= offset.scale.z;
-        
+
         self
     }
 }

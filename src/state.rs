@@ -18,7 +18,7 @@ use rand_core::SeedableRng;
 use crate::world::entity::prefab::rand_tile::RandomTile;
 use cgmath::Vector3;
 use crate::backend::BackendProxy;
-use crate::backend::graphics::transform::ModelView;
+use crate::backend::graphics::model_view::ModelView;
 
 pub struct State {
     backend_proxy: BackendProxy,

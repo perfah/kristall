@@ -5,7 +5,7 @@ pub mod graphics;
 //pub mod audio;
 pub mod input;
 
-use graphics::transform::{ModelView, bind_group_layout};
+use graphics::model_view::{ModelView, bind_group_layout};
 
 pub struct BackendProxy {
     device: Arc<Device>,

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::world::entity::component::{Component};
-use crate::backend::graphics::transform::ModelView;
+use crate::backend::graphics::model_view::ModelView;
 use crate::backend::BackendProxy;
 
 pub struct GraphicsModel {
