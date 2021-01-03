@@ -35,9 +35,7 @@ impl<'a> System<'a> for TranslateSystem {
         let delta = delta.as_secs_f32();
 
         
-        while let Some(ref entity) = self.iter.as_mut().unwrap().next() {
-
-        }
+        
 
     }
 }

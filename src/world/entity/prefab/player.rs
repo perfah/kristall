@@ -9,17 +9,18 @@ use crate::world::entity::component::controller::Controller;
 use crate::backend::input::entity::{WASDEntityController, InputAccelerationMethod};
 use cgmath::Vector3;
 use crate::world::entity::prefab::cube::Cube;
+use crate::backend::BackendProxy;
 
 pub struct Player {}
 
 impl Prefab for Player {
-    fn apply(&self, builder: EntityBuilder) -> EntityBuilder {
+    fn apply(&self, builder: EntityBuilder, backend_proxy: &BackendProxy) -> EntityBuilder {
         let upper = Cube{ pos: Vector3 {x: 0.0, y: 3.0, z: 0.0}, mass: 5.0, rot: false, player: true }
-            .instantiate()
+            .instantiate(backend_proxy)
             .with_component(Controller::new(WASDEntityController::new(InputAccelerationMethod::Force(10f32))));
 
         let lower = Cube{ pos: Vector3 {x: 0.0, y: 0.0, z: 0.0}, mass: 0.0, rot: false, player: false }
-            .instantiate();
+            .instantiate(backend_proxy);
 
         builder
             .with_name("player")

@@ -58,24 +58,26 @@ impl<'a> System<'a> for IntegrateSystem {
 
             if transform.frozen { continue; }
 
-            let Transform {
-                ref mut pos,
-                ref mut vel,
-                ref mut acc,
-                ref mut rot,
-                ref mut rot_vel ,
-                ref mut rot_acc, ..} = *transform;
+            {
+                let Transform {
+                    ref mut pos,
+                    ref mut vel,
+                    ref mut acc,
+                    ref mut rot,
+                    ref mut rot_vel ,
+                    ref mut rot_acc, ..} = *transform;
 
-            *pos += *vel * delta;
-            *vel += *acc * delta;
+                *pos += *vel * delta;
+                *vel += *acc * delta;
 
-            *rot += *rot_vel * delta;
-            *rot_vel += *rot_acc * delta;
+                *rot += *rot_vel * delta;
+                *rot_vel += *rot_acc * delta;
 
-            if let Some(ref rigid_body) = opt_rigid_body {
-                *acc = rigid_body.net_force();
+                if let Some(ref rigid_body) = opt_rigid_body {
+                    *acc = rigid_body.net_force();
+                }
             }
-
+            transform.flush();
         }
     }
 }

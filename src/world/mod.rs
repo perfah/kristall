@@ -14,6 +14,7 @@ use cgmath::Vector3;
 use crate::world::entity::component::camera::Camera;
 use crate::world::entity::component::transform::Transform;
 use crate::world::entity::prefab::car::Car;
+use crate::backend::BackendProxy;
 
 
 pub mod entity;
@@ -24,8 +25,9 @@ pub struct World {
 }
 
 impl World {
-    pub fn new<T: Prefab>(prefab: T) -> Self {
-        let world_builder = prefab.instantiate();
+    pub fn new<T: Prefab>(prefab: T, backend_proxy: &BackendProxy) -> Self {
+        let world_builder = prefab.instantiate(backend_proxy);
+
         let root = world_builder.build();
 
         start_system_in_parallel::<IntegrateSystem, Entity>(root.clone());

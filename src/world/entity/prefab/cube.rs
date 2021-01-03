@@ -7,6 +7,7 @@ use crate::world::entity::component::rigid_body::RigidBody;
 use crate::world::entity::component::camera::{Camera, CameraPerspective};
 use crate::backend::input::camera::MouseCameraController;
 use cgmath::Vector3;
+use crate::backend::BackendProxy;
 
 pub struct Cube {
     pub pos: Vector3<f32>,
@@ -16,11 +17,11 @@ pub struct Cube {
 }
 
 impl Prefab for Cube {
-    fn apply(&self, builder: EntityBuilder) -> EntityBuilder {
+    fn apply(&self, builder: EntityBuilder, backend_proxy: &BackendProxy) -> EntityBuilder {
         let mut builder = builder
             .with_name("cubeyboi")
             .with_component(
-                if self.player { Transform::new() } else { Transform::frozen() }
+                if self.player { Transform::new(backend_proxy) } else { Transform::frozen(backend_proxy) }
                 .with_position(self.pos.clone()))
             .with_component(GraphicsModel::from("/home/perfah/Programming/kristall/res/model/cube.obj"))
             .with_component(RigidBody::new(self.mass));

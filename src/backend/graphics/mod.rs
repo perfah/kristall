@@ -1,6 +1,7 @@
+pub mod transform;
+pub mod proj;
 pub mod texture;
 pub mod camera;
-pub mod uniform;
 pub mod model;
 
 use winit::{
@@ -9,14 +10,17 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use std::{mem, iter};
+use std::sync::Arc;
+use std::time::{Instant, Duration};
 use model::DrawModel;
+use crate::backend::graphics::transform::TransformSink;
 use crate::backend::graphics::texture::Texture;
 use crate::backend::graphics::camera::{Camera, CameraPerspective};
-use crate::backend::graphics::uniform::{Uniforms, TransformRaw};
+use crate::backend::graphics::proj::Uniforms;
+use crate::backend::graphics::transform::ModelView;
 use crate::backend::graphics::model::Vertex;
 use crate::backend::graphics::model::Model;
 use cgmath::{Rotation3, InnerSpace, Zero};
-use std::time::{Instant, Duration};
 use crate::world::World;
 use crate::world::entity::{EntityContainer, EntityIterator};
 use crate::world::entity::component::transform::Transform;
@@ -41,20 +45,18 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
 pub struct WGPUState {
     surface: wgpu::Surface,
     adapter: wgpu::Adapter,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
+    pub device: Arc<wgpu::Device>,
+    pub queue: Arc<wgpu::Queue>,
     sc_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
     render_pipeline: wgpu::RenderPipeline,
     pub texture_bind_group_layout: BindGroupLayout,
     depth_texture: Texture,
     uniforms: Uniforms,
-    uniform_buffer: wgpu::Buffer,
+    proj_view_ubuff: wgpu::Buffer,
     uniform_bind_group_layout: wgpu::BindGroupLayout,
     uniform_bind_group: wgpu::BindGroup,
-    size: winit::dpi::PhysicalSize<u32>,
-    instances: Vec<TransformRaw>,
-    instance_buffer: wgpu::Buffer
+    size: winit::dpi::PhysicalSize<u32>
 }
 
 impl WGPUState {
@@ -119,23 +121,25 @@ impl WGPUState {
 
         let mut uniforms = Uniforms::new();
 
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
+        let proj_view_ubuff = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("proj_view_ubuff"),
             contents: bytemuck::cast_slice(&[uniforms]),
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::VERTEX,
+                        ty: wgpu::BindingType::UniformBuffer {
+                            dynamic: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }
+                ],
                 label: Some("uniform_bind_group_layout"),
             });
 
@@ -143,27 +147,12 @@ impl WGPUState {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(uniform_buffer.slice(..)),
+                resource: wgpu::BindingResource::Buffer(proj_view_ubuff.slice(..)),
             }],
             label: Some("uniform_bind_group"),
         });
-
+        
         let depth_texture = texture::Texture::create_depth_texture(&device, &sc_desc, "depth_texture");
-
-        let render_pipeline_layout =
-            device.create_pipeline_layout( &wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let instances = Vec::new();
-        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Instance Buffer"),
-            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
-            size: 10000 * mem::size_of::<TransformRaw>() as u64,
-            mapped_at_creation: false
-        });
 
         let mut compiler = shaderc::Compiler::new().unwrap();
 
@@ -178,14 +167,18 @@ impl WGPUState {
 
         let vs_module = device.create_shader_module(vs_data);
         let fs_module = device.create_shader_module(fs_data);
+
+        let device = Arc::new(device);
         
+        let transform_bind_group_layout = crate::backend::graphics::transform::bind_group_layout(&device);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout],
+                bind_group_layouts: &[&texture_bind_group_layout, &uniform_bind_group_layout, &transform_bind_group_layout],
                 push_constant_ranges: &[],
             });
-
+            
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -220,30 +213,29 @@ impl WGPUState {
             }),
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[model::ModelVertex::desc(), TransformRaw::desc()],
+                vertex_buffers: &[model::ModelVertex::desc()],
             },
             sample_count: 1,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         });
+        
 
         Self {
             adapter,
             surface,
             device,
-            queue,
+            queue: Arc::new(queue),
             sc_desc,
             swap_chain,
             render_pipeline,
-            uniform_buffer,
             uniform_bind_group_layout,
             uniform_bind_group,
             uniforms,
+            proj_view_ubuff,
             depth_texture,
             size,
-            texture_bind_group_layout,
-            instances,
-            instance_buffer
+            texture_bind_group_layout
         }
     }
 
@@ -257,26 +249,17 @@ impl WGPUState {
             texture::Texture::create_depth_texture(&self.device, &self.sc_desc, "depth_texture");
     }
 
-    pub fn update(&mut self, models: &Vec<(ComponentManager<Transform>, &'static str)>, build_projection_matrix: cgmath::Matrix4<f32>) {
+    pub fn update(&mut self, build_projection_matrix: cgmath::Matrix4<f32>) {
         self.uniforms.update_view_proj(build_projection_matrix);
 
-        let updated_transforms = models
-            .iter()
-            .map(|(a, b)| a)
-            .map(|mgr| mgr.peek(Transform::to_raw).unwrap())
-            .collect::<Vec<_>>();
-
-            self.queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(updated_transforms.as_slice()));
-            
-
         self.queue.write_buffer(
-            &self.uniform_buffer,
+            &self.proj_view_ubuff,
             0,
             bytemuck::cast_slice(&[self.uniforms]),
         );
     }
 
-    pub fn render(&mut self, instances: &Vec<(ComponentManager<Transform>, &'static str)>, 
+    pub fn render(&mut self, graphics_cache: &HashMap<&'static str, Vec<Arc<TransformSink>>>, 
                              loaded_models: &HashMap<&'static str, Model>,
                              fps: u128) {
         
@@ -316,19 +299,14 @@ impl WGPUState {
             
             render_pass.set_pipeline(&self.render_pipeline);
 
-            let vertex_buffer_size = (mem::size_of::<[f32; 4]>() * 4) as u64;
-            
-            for (i, (transform, model_str)) in instances.iter().enumerate() {
-                //if i > 2 { break; }
+            for model_str in graphics_cache.keys() {
                 let model = loaded_models.get(model_str).unwrap();
 
-                render_pass.set_vertex_buffer(1, self.instance_buffer.slice(
-                    (i as u64 * vertex_buffer_size)..((i+1) as u64 * vertex_buffer_size)));
-                
-                render_pass.draw_model(model, &self.uniform_bind_group);
+                for transform_sink in graphics_cache.get(model_str).unwrap() {
+                    render_pass.draw_model(model, &self.uniform_bind_group, &transform_sink.bind_group);
+                }
             }
         }
-
         
         ui::text::render_text(&self.device, 
                               &self.queue,
