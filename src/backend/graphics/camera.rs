@@ -55,7 +55,7 @@ impl Camera {
 
 
     fn get_view(&self) -> cgmath::Matrix4<f32> {
-        let target = self.target.peek(|transform| Point3::from_vec(transform.pos)).unwrap();
+        let target = self.target.peek(|transform| Point3::from_vec(transform.position)).unwrap();
         let perspective = &self.component.lock_component_for_read().perspective;
 
         match perspective {

@@ -46,33 +46,32 @@ impl EntityController for WASDEntityController {
         let dir_y = if self.down { -1f32 } else if self.up { 1f32 } else { 0f32 };
         let dir_z = if self.forward { -1f32 } else if self.back { 1f32 } else { 0f32 };
         
-        match self.acc_method {
-            InputAccelerationMethod::Force(magnitude) => {
-                if let Some(rigid_body) = entity.component::<RigidBody>() {
-                    (*rigid_body.lock_component_for_write()).commit_force("input", Vector3::<f32> { 
+        if let Some(mgr) = entity.component::<RigidBody>() {
+            let mut rigid_body = mgr.lock_component_for_write();
+
+            match self.acc_method {
+                InputAccelerationMethod::Force(magnitude) => {
+                    rigid_body.commit_force("input", Vector3::<f32> { 
                         x: dir_x * magnitude, 
                         y: dir_y * magnitude,
                         z: dir_z * magnitude
                     });
-                }
-                else {
-                    println!("Warning: Expected 'RigidBody' component as controller is configured to use InputAccelerationMethod::Force.")
-                }
-            },
-            InputAccelerationMethod::Velocity(velocity) => {
-                
-                if let Some(transform) = entity.component::<Transform>() {
-                    let Transform { ref mut vel, .. } = *transform.lock_component_for_write();
+                    
+                },
+                InputAccelerationMethod::Velocity(vel) => {
+                    let RigidBody { ref mut velocity, .. } = *rigid_body;
 
-                    vel.x = dir_x * velocity;
-                    vel.y = dir_y * velocity;
-                    vel.z = dir_z * velocity;
-                }
-                else {
-                    println!("Warning: Expected 'Transform' component as controller is configured to use InputAccelerationMethod::Velocity.")
+                    velocity.x = dir_x * vel;
+                    velocity.y = dir_y * vel;
+                    velocity.z = dir_z * vel;
                 }
             }
         }
+        else {
+            println!("Warning: Expected 'RigidBody' component as controller is configured to use InputAccelerationMethod::Force.")
+        }
+
+    
     }
 
     fn on_incoming_event(&mut self, incoming_event: &DeviceEvent) -> bool {

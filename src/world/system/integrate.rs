@@ -12,13 +12,13 @@ use futures::StreamExt;
 use crate::world::entity::component::rigid_body::RigidBody;
 
 pub struct IntegrateSystem {
-    components: Vec<(ComponentManager<Transform>, Option<ComponentManager<RigidBody>>)>
+    components: Vec<(ComponentManager<Transform>, ComponentManager<RigidBody>)>
 }
 
 impl<'a> System<'a> for IntegrateSystem {
     type Environment = 
         Vec<(SysEnvComponentMut<'a, Transform>,
-             Option<SysEnvComponent<'a, RigidBody>>)>
+             SysEnvComponentMut<'a, RigidBody>)>
     ;
 
     fn new() -> Self{
@@ -30,8 +30,8 @@ impl<'a> System<'a> for IntegrateSystem {
 
         let mut new_components = source.query_entities(true)
             .map(|entity| (entity.component::<Transform>(), entity.component::<RigidBody>()))
-            .filter(|(a,_)| a.is_some())
-            .map(|(a,b)| (a.unwrap(), b))
+            .filter(|(a, b)| a.is_some() && b.is_some())
+            .map(|(a, b)| (a.unwrap(), b.unwrap()))
             .collect();
 
         self.components.append(&mut new_components);
@@ -43,10 +43,7 @@ impl<'a> System<'a> for IntegrateSystem {
         Result::Ok(
             self.components
                 .iter()
-                .map(|(a, b)| (
-                    a.into(),
-                    if let Some(c) = b { Some(c.into()) } else { None }
-                ))
+                .map(|(a, b)| (a.into(), b.into()))
                 .collect()
         )
     }
@@ -54,29 +51,25 @@ impl<'a> System<'a> for IntegrateSystem {
     fn on_run(&self, environment: Self::Environment, delta: Duration) {
         let delta = delta.as_secs_f32();
 
-        for (mut transform, opt_rigid_body) in environment {
+        for (mut transform, mut rigid_body) in environment {
+            if !rigid_body.movable { continue; }
 
-            if transform.frozen { continue; }
+            let Transform { ref mut position, ref mut angular_rotation, ..} = *transform;
 
-            {
-                let Transform {
-                    ref mut pos,
-                    ref mut vel,
-                    ref mut acc,
-                    ref mut rot,
-                    ref mut rot_vel ,
-                    ref mut rot_acc, ..} = *transform;
+            let net_force = rigid_body.net_force();
 
-                *pos += *vel * delta;
-                *vel += *acc * delta;
+            let RigidBody { ref mut velocity, 
+                            ref mut acceleration, 
+                            ref mut angular_velocity, 
+                            ref mut angular_acceleration, mass, ..} = *rigid_body;
 
-                *rot += *rot_vel * delta;
-                *rot_vel += *rot_acc * delta;
+            *position += *velocity * delta;
+            *velocity += *acceleration * delta;
+            *acceleration = net_force / mass;
 
-                if let Some(ref rigid_body) = opt_rigid_body {
-                    *acc = rigid_body.net_force();
-                }
-            }
+            // TODO: Perhaps incorrect:
+            *angular_rotation += *angular_velocity * delta;
+            *angular_velocity += *angular_acceleration * delta;
         }
     }
 }

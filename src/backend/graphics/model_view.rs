@@ -35,10 +35,10 @@ impl ModelView {
         let c = 2.0 * std::f32::consts::PI;
 
         let raw: [[f32; 4]; 4] = (
-            cgmath::Matrix4::from_translation(transform.pos) *
-            cgmath::Matrix4::from_angle_x(cgmath::Rad(transform.rot.x % c)) *
-            cgmath::Matrix4::from_angle_y(cgmath::Rad(transform.rot.y % c)) *
-            cgmath::Matrix4::from_angle_z(cgmath::Rad(transform.rot.z % c))
+            cgmath::Matrix4::from_translation(transform.position) *
+            cgmath::Matrix4::from_angle_x(cgmath::Rad(transform.angular_rotation.x % c)) *
+            cgmath::Matrix4::from_angle_y(cgmath::Rad(transform.angular_rotation.y % c)) *
+            cgmath::Matrix4::from_angle_z(cgmath::Rad(transform.angular_rotation.z % c))
         ).into();
 
         self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(vec![raw].as_slice()));

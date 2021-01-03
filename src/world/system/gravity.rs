@@ -66,11 +66,15 @@ impl<'a> System<'a> for GravitySystem {
     fn on_run(&self, (transforms, mut rigid_bodies): Self::Environment, delta: Duration) {
         for i in 0..transforms.len() {
             for j in (i+1)..transforms.len() {
+                if rigid_bodies.get(i).unwrap().mass <= 0f32 || rigid_bodies.get(j).unwrap().mass <= 0f32{
+                    continue;
+                }
+
                 let transform_i = transforms.get(i).unwrap();
                 let transform_j = transforms.get(j).unwrap();
 
-                let pos_i = transform_i.pos;
-                let pos_j = transform_j.pos;
+                let pos_i = transform_i.position;
+                let pos_j = transform_j.position;
                 let dist_i_to_j = pos_j - pos_i;
                 let dist_j_to_i = dist_i_to_j * -1.0;
                 let mass_i = rigid_bodies.get_mut(i).unwrap().mass as f64;
@@ -80,13 +84,10 @@ impl<'a> System<'a> for GravitySystem {
                 
                 let force = G * (mass_i * mass_j) / (r as f64 * r as f64);
 
-                if !transforms.get(i).unwrap().frozen {
-                    rigid_bodies.get_mut(i).unwrap().commit_force("gravity", dist_i_to_j.normalize() * force as f32);
-                }
+                // Apply forces:
+                rigid_bodies.get_mut(i).unwrap().commit_force("gravity", dist_i_to_j.normalize() * force as f32);                
+                rigid_bodies.get_mut(j).unwrap().commit_force("gravity", dist_j_to_i.normalize() * force as f32);
                 
-                if !transforms.get(j).unwrap().frozen {
-                    rigid_bodies.get_mut(j).unwrap().commit_force("gravity", dist_j_to_i.normalize() * force as f32);
-                }
             }
         }
 
