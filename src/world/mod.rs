@@ -33,7 +33,7 @@ impl World {
 
         start_system_in_parallel::<TranslateSystem, Entity>(root.clone());
         start_system_in_parallel::<IntegrateSystem, Entity>(root.clone());
-        //start_system_in_parallel::<GravitySystem, Entity>(root.clone());
+        start_system_in_parallel::<GravitySystem, Entity>(root.clone());
         start_system_in_parallel::<InputSystem, Entity>(root.clone());
 
         World { root }
