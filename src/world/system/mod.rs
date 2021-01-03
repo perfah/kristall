@@ -14,6 +14,7 @@ use std::time::Instant;
 use crate::world::entity::builder::EntityBuilder;
 use crate::world::entity::component::transform::Transform;
 
+pub mod translate;
 pub mod integrate;
 pub mod gravity;
 pub mod input;

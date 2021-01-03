@@ -2,40 +2,53 @@ use crate::world::system::{System, SysEnvComponentMut, SystemRuntimeError, SysEn
 use crate::world::entity::component::{Component, ComponentManager, ComponentWriteAccess};
 use crate::world::entity::component::transform::Transform;
 use crate::world::entity::component::model::GraphicsModel;
-use crate::world::entity::{Entity, EntityContainer, EntityIterator};
-use std::sync::Arc;
-use crate::world::World;
-use std::ops::DerefMut;
+use crate::world::entity::{Entity, EntityContainer};
 use std::time::Duration;
-use cgmath::Vector3;
-use futures::StreamExt;
-use crate::world::entity::component::rigid_body::RigidBody;
 
 pub struct TranslateSystem {
-    iter: Option<EntityIterator>
+    root: Option<Entity>,
 }
 
 impl<'a> System<'a> for TranslateSystem {
-    type Environment = &'a mut Option<EntityIterator>;
+    type Environment = ();
 
     fn new() -> Self{
-        Self { iter: None }
+        Self { root: None }
     }
 
     fn on_fetch<T: EntityContainer>(&mut self, source: &T) -> Result<(), SystemRuntimeError>{
-        self.iter = Some(source.clone().query_entities(true));
+        self.root = Some(source.clone().into());
         Result::Ok(())
     }
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
-        Result::Ok(&mut self.iter)
+        Result::Ok(())
     }
 
-    fn on_run(&self, environment: Self::Environment, delta: Duration) {
-        let delta = delta.as_secs_f32();
+    fn on_run(&self, _: Self::Environment, _: Duration) {
+        if let Some(ref parent) = self.root {
+            let mut acc_offsets = Vec::new();
+            TranslateSystem::update_gpu_buffers(parent, &mut acc_offsets);
+        }
+    }
+}
 
-        
-        
+impl TranslateSystem {
+    fn update_gpu_buffers(parent: &Entity, acc_offsets: &mut Vec<Transform>) {
+        if let Some(mgr) = parent.component::<Transform>() {
+            acc_offsets.push((*mgr.lock_component_for_write()).clone());
+        }
 
+        if let Some(mgr) = parent.component::<GraphicsModel>() {
+            let absolute_transform = acc_offsets.iter().fold(Transform::new(), |acc, x| acc.with_offset(x));
+            (*mgr.lock_component_for_write()).view.translate(absolute_transform);
+        }
+
+        let mut iter = parent.query_direct_children();
+        while let Some(child) = iter.next() {
+            TranslateSystem::update_gpu_buffers(&child, acc_offsets);
+        }
+
+        acc_offsets.pop();
     }
 }
