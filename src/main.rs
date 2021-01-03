@@ -15,15 +15,12 @@ extern crate futures;
 extern crate rand;
 extern crate rand_core;
 
-use log::Level;
-
 use winit::{
     event::*,
     event_loop::{EventLoop, ControlFlow},
     window::{Window, WindowBuilder},
 };
 use futures::executor::block_on;
-use crate::backend::graphics::WGPUState;
 use crate::state::State;
 
 fn main() {
@@ -84,6 +81,9 @@ fn main() {
                     },
                     WindowEvent::CursorLeft {..} => {
                         state.set_escape_status(&window, true);
+                    },
+                    WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, ..} => {
+                        state.set_escape_status(&window, false);
                     },
                     _ => {}
                 }
