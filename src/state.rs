@@ -43,7 +43,7 @@ impl State {
             .filter(|(a,b)| a.is_some() && b.is_some())
             .map(|(a,b)| (a.unwrap(), b.unwrap()))
             .next()
-            .unwrap();
+            .expect("No suitable entity camera!");
 
         let camera = Camera::new(camera_component, target);
 
