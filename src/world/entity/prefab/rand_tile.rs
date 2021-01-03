@@ -39,7 +39,6 @@ impl Prefab for RandomTile {
                         },
                         mass: 9000000.0,
                         rot: false,
-                        player: false
                     };
 
                     println!("Entity pos = {:?}", cube.pos);
