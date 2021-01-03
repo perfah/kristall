@@ -2,15 +2,16 @@
 use std::sync::Arc;
 use std::mem::size_of;
 use wgpu::{Buffer, BindGroup, BindGroupLayout, Queue, Device};
+use crate::world::entity::component::transform::Transform;
 
-pub struct TransformSink {
+pub struct ModelView {
     uniform_buffer: Buffer,
     pub bind_group: BindGroup,
     queue: Arc<Queue>
 }
 
-impl TransformSink {
-    pub fn new(device: Arc<Device>, queue: Arc<Queue>, bind_group_layout: &BindGroupLayout) -> TransformSink {
+impl ModelView {
+    pub fn new(device: Arc<Device>, queue: Arc<Queue>, bind_group_layout: &BindGroupLayout) -> ModelView {
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             size: size_of::<ModelView>() as u64,
@@ -27,24 +28,22 @@ impl TransformSink {
             label: Some("uniform_bind_group"),
         });
 
-        TransformSink { uniform_buffer, bind_group, queue: queue.clone() }
+        ModelView { uniform_buffer, bind_group, queue: queue.clone() }
     }
 
-    pub fn update(&self, model_view: ModelView) {
-        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(vec![model_view].as_slice()));
+    pub fn translate(&self, transform: Transform) {
+        let c = 2.0 * std::f32::consts::PI;
+
+        let raw: [[f32; 4]; 4] = (
+            cgmath::Matrix4::from_translation(transform.pos) *
+            cgmath::Matrix4::from_angle_x(cgmath::Rad(transform.rot.x % c)) *
+            cgmath::Matrix4::from_angle_y(cgmath::Rad(transform.rot.y % c)) *
+            cgmath::Matrix4::from_angle_z(cgmath::Rad(transform.rot.z % c))
+        ).into();
+
+        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(vec![raw].as_slice()));
     }
 }
-
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct ModelView {
-    #[allow(dead_code)]
-    pub model: [[f32; 4]; 4],
-}
-
-unsafe impl bytemuck::Pod for ModelView {}
-unsafe impl bytemuck::Zeroable for ModelView {}
 
 pub fn bind_group_layout(device: &Arc<Device>) -> wgpu::BindGroupLayout {
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

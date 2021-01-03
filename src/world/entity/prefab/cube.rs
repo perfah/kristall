@@ -21,9 +21,9 @@ impl Prefab for Cube {
         let mut builder = builder
             .with_name("cubeyboi")
             .with_component(
-                if self.player { Transform::new(backend_proxy) } else { Transform::frozen(backend_proxy) }
+                if self.player { Transform::new() } else { Transform::frozen() }
                 .with_position(self.pos.clone()))
-            .with_component(GraphicsModel::from("/home/perfah/Programming/kristall/res/model/cube.obj"))
+            .with_component(GraphicsModel::new("/home/perfah/Programming/kristall/res/model/cube.obj", backend_proxy))
             .with_component(RigidBody::new(self.mass));
 
         if self.player { 

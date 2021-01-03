@@ -18,12 +18,12 @@ use rand_core::SeedableRng;
 use crate::world::entity::prefab::rand_tile::RandomTile;
 use cgmath::Vector3;
 use crate::backend::BackendProxy;
-use crate::backend::graphics::transform::TransformSink;
+use crate::backend::graphics::transform::ModelView;
 
 pub struct State {
     backend_proxy: BackendProxy,
     graphics_backend: WGPUState,
-    graphics_cache: HashMap<&'static str, Vec<Arc<TransformSink>>>,
+    graphics_cache: HashMap<&'static str, Vec<Arc<ModelView>>>,
     world: World,
     camera: Camera,
     loaded_models: HashMap<&'static str, Model>,
@@ -65,16 +65,20 @@ impl State {
     // TODO: Use HashMap<&str, Vec<TransformSink>>
     pub fn update_graphics_data(&mut self) {
         let mut drawables = self.world.query_entities(true)
-            .map(|e| (e.component::<Transform>(), e.component::<GraphicsModel>()))
-            .filter(|(a, b)| a.is_some() && b.is_some())
-            .map(|(a, b)| (a.unwrap(), b.unwrap()));
+            .map(|x| x.component::<GraphicsModel>())
+            .filter(|x| x.is_some())
+            .map(|x| x.unwrap());
 
         self.graphics_cache.clear();
 
-        while let Some((ref transform, ref graphics_model)) = drawables.next() {
+        while let Some(ref graphics_model) = drawables.next() {
             let obj_path = graphics_model
                 .peek(|graphics_model| graphics_model.path_to_obj)
                 .expect("Graphics model: Couldn't retrieve model path!");
+
+            let model_view = graphics_model
+                .peek(|graphics_model| graphics_model.view.clone())
+                .expect("Graphics model: Couldn't retrieve model view!");
 
             if !self.loaded_models.contains_key(obj_path) {
                 self.loaded_models.insert(
@@ -94,8 +98,7 @@ impl State {
             }
 
             let mut current = self.graphics_cache.remove(obj_path).unwrap();
-        
-            current.push(transform.lock_component_for_read().sink.clone());
+            current.push(model_view);
 
             self.graphics_cache.insert(obj_path, current);
         }

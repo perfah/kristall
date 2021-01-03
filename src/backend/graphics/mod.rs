@@ -13,11 +13,10 @@ use std::{mem, iter};
 use std::sync::Arc;
 use std::time::{Instant, Duration};
 use model::DrawModel;
-use crate::backend::graphics::transform::TransformSink;
+use crate::backend::graphics::transform::ModelView;
 use crate::backend::graphics::texture::Texture;
 use crate::backend::graphics::camera::{Camera, CameraPerspective};
 use crate::backend::graphics::proj::Uniforms;
-use crate::backend::graphics::transform::ModelView;
 use crate::backend::graphics::model::Vertex;
 use crate::backend::graphics::model::Model;
 use cgmath::{Rotation3, InnerSpace, Zero};
@@ -259,7 +258,7 @@ impl WGPUState {
         );
     }
 
-    pub fn render(&mut self, graphics_cache: &HashMap<&'static str, Vec<Arc<TransformSink>>>, 
+    pub fn render(&mut self, graphics_cache: &HashMap<&'static str, Vec<Arc<ModelView>>>, 
                              loaded_models: &HashMap<&'static str, Model>,
                              fps: u128) {
         
@@ -302,8 +301,8 @@ impl WGPUState {
             for model_str in graphics_cache.keys() {
                 let model = loaded_models.get(model_str).unwrap();
 
-                for transform_sink in graphics_cache.get(model_str).unwrap() {
-                    render_pass.draw_model(model, &self.uniform_bind_group, &transform_sink.bind_group);
+                for model_view in graphics_cache.get(model_str).unwrap() {
+                    render_pass.draw_model(model, &self.uniform_bind_group, &model_view.bind_group);
                 }
             }
         }

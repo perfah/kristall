@@ -77,7 +77,6 @@ impl<'a> System<'a> for IntegrateSystem {
                     *acc = rigid_body.net_force();
                 }
             }
-            transform.flush();
         }
     }
 }

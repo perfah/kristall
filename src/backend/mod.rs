@@ -5,7 +5,7 @@ pub mod graphics;
 //pub mod audio;
 pub mod input;
 
-use graphics::transform::{TransformSink, bind_group_layout};
+use graphics::transform::{ModelView, bind_group_layout};
 
 pub struct BackendProxy {
     device: Arc<Device>,
@@ -19,7 +19,7 @@ impl BackendProxy {
         BackendProxy { device, queue, transform_bind_group_layout }
     }
 
-    pub fn new_transform_sink(&self) -> TransformSink {
-        TransformSink::new(self.device.clone(), self.queue.clone(), &self.transform_bind_group_layout)
+    pub fn instantiate_model_view(&self) -> ModelView {
+        ModelView::new(self.device.clone(), self.queue.clone(), &self.transform_bind_group_layout)
     }
 }

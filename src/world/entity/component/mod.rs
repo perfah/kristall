@@ -145,7 +145,7 @@ impl<T: Component> ComponentIterator<T> {
         Self {
             component: PhantomData,
             entity: entity.clone(),
-            entity_iter: EntityIterator::new(entity.clone(), None, include_parent)
+            entity_iter: EntityIterator::new(entity.clone(), None, include_parent, false)
         }
     }
 
