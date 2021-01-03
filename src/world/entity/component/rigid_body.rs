@@ -5,12 +5,28 @@ use std::collections::HashMap;
 
 pub struct RigidBody {
     pub mass: f32,
+    pub movable: bool,
+    pub velocity: Vector3<f32>,
+    pub acceleration: Vector3<f32>,
+    pub angular_velocity: Vector3<f32>,
+    pub angular_acceleration: Vector3<f32>,
+
+    // Internal:
     forces: HashMap<&'static str, Vector3<f32>>
 }
 
 impl RigidBody{
     pub fn new(mass: f32) -> RigidBody {
-        RigidBody { mass, forces: HashMap::new() }
+        RigidBody { 
+            mass, 
+            movable: true,
+            velocity: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+            acceleration: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+            angular_velocity: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+            angular_acceleration: Vector3 {x: 0.0, y: 0.0, z: 0.0},
+
+            forces: HashMap::new(),
+         }
     }
 
     pub fn commit_force(&mut self, force_desc: &'static str, mut force: Vector3<f32>) {

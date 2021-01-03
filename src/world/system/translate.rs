@@ -2,80 +2,53 @@ use crate::world::system::{System, SysEnvComponentMut, SystemRuntimeError, SysEn
 use crate::world::entity::component::{Component, ComponentManager, ComponentWriteAccess};
 use crate::world::entity::component::transform::Transform;
 use crate::world::entity::component::model::GraphicsModel;
-use crate::world::entity::{Entity, EntityContainer, EntityIterator};
-use std::sync::Arc;
-use crate::world::World;
-use std::ops::DerefMut;
+use crate::world::entity::{Entity, EntityContainer};
 use std::time::Duration;
-use cgmath::Vector3;
-use futures::StreamExt;
-use crate::world::entity::component::rigid_body::RigidBody;
 
 pub struct TranslateSystem {
-    components: Vec<(ComponentManager<Transform>, Option<ComponentManager<RigidBody>>)>
+    root: Option<Entity>,
 }
 
 impl<'a> System<'a> for TranslateSystem {
-    type Environment = 
-        Vec<(SysEnvComponentMut<'a, Transform>,
-             Option<SysEnvComponent<'a, RigidBody>>)>
-    ;
+    type Environment = ();
 
     fn new() -> Self{
-        Self { components: Vec::new() }
+        Self { root: None }
     }
 
     fn on_fetch<T: EntityContainer>(&mut self, source: &T) -> Result<(), SystemRuntimeError>{
-        self.components.clear();
-
-        let mut new_components = source.query_entities(true)
-            .map(|entity| (entity.component::<Transform>(), entity.component::<RigidBody>()))
-            .filter(|(a,_)| a.is_some())
-            .map(|(a,b)| (a.unwrap(), b))
-            .collect();
-
-        self.components.append(&mut new_components);
-
+        self.root = Some(source.clone().into());
         Result::Ok(())
     }
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
-        Result::Ok(
-            self.components
-                .iter()
-                .map(|(a, b)| (
-                    a.into(),
-                    if let Some(c) = b { Some(c.into()) } else { None }
-                ))
-                .collect()
-        )
+        Result::Ok(())
     }
 
-    fn on_run(&self, environment: Self::Environment, delta: Duration) {
-        let delta = delta.as_secs_f32();
-
-        for (mut transform, opt_rigid_body) in environment {
-
-            if transform.frozen { continue; }
-
-            let Transform {
-                ref mut pos,
-                ref mut vel,
-                ref mut acc,
-                ref mut rot,
-                ref mut rot_vel ,
-                ref mut rot_acc, ..} = *transform;
-
-            *pos += *vel * delta;
-            *vel += *acc * delta;
-
-            *rot += *rot_vel * delta;
-            *rot_vel += *rot_acc * delta;
-
-            if let Some(ref rigid_body) = opt_rigid_body {
-                *acc = rigid_body.net_force();
-            }
-
+    fn on_run(&self, _: Self::Environment, _: Duration) {
+        if let Some(ref parent) = self.root {
+            let mut acc_offsets = Vec::new();
+            TranslateSystem::update_gpu_buffers(parent, &mut acc_offsets);
         }
+    }
+}
+
+impl TranslateSystem {
+    fn update_gpu_buffers(parent: &Entity, acc_offsets: &mut Vec<Transform>) {
+        if let Some(mgr) = parent.component::<Transform>() {
+            acc_offsets.push((*mgr.lock_component_for_write()).clone());
+        }
+
+        if let Some(mgr) = parent.component::<GraphicsModel>() {
+            let absolute_transform = acc_offsets.iter().fold(Transform::new(), |acc, x| acc.with_offset(x));
+            (*mgr.lock_component_for_write()).view.translate(absolute_transform);
+        }
+
+        let mut iter = parent.query_direct_children();
+        while let Some(child) = iter.next() {
+            TranslateSystem::update_gpu_buffers(&child, acc_offsets);
+        }
+
+        acc_offsets.pop();
     }
 }

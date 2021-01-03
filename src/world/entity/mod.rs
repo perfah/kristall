@@ -24,6 +24,9 @@ pub struct Entity {
     components: Arc<HashMap<TypeId, Arc<RwLock<Box<dyn Component>>>>>
 }
 
+unsafe impl Send for Entity {}
+unsafe impl Sync for Entity {}
+
 impl Entity{
     pub fn new(name: &'static str) -> Entity {
         Entity{
@@ -63,66 +66,68 @@ impl fmt::Debug for Entity {
     }
 }
 
-pub trait EntityContainer: Sync + Send + Clone + IntoIterator<Item = Entity, IntoIter = EntityIterator> {
-    fn query_entities(&self, include_parent: bool) -> EntityIterator;
-    fn query_entity_by_name(&self, name: &'static str, include_parent: bool) -> EntityIterator;
-    fn query_components<T: Component>(&self, include_parent: bool) -> ComponentIterator<T>;
-    fn query_components_by_predicate<T: Component, F: Fn(&T) -> bool>(&self, filter_predicate: F, include_parent: bool) -> FilteredComponentIterator<T, F>;
-    fn spawn_entity(&self, entity: Entity);
-}
-
-impl EntityContainer for Entity {
-    fn query_entities(&self, include_parent: bool) -> EntityIterator {
-        EntityIterator::new(self.clone(), None, include_parent)
+pub trait EntityContainer: Into<Entity> + IntoIterator<Item = Entity, IntoIter = EntityIterator> + Sync + Send + Clone {
+    fn query_entities(&self, include_parent: bool) -> EntityIterator{
+        EntityIterator::new(self.clone().into(), None, include_parent, false)
     }
 
-    fn query_entity_by_name(&self, name: &'static str, include_parent: bool) -> EntityIterator {
-        EntityIterator::new(self.clone(), Some(name.to_string()), include_parent)
+    // fn query_children : include_parent = false
+
+    fn query_direct_children(&self) -> EntityIterator{
+        EntityIterator::new(self.clone().into(), None, false, true)
     }
 
-    fn query_components<T: Component>(&self, include_parent: bool) -> ComponentIterator<T> {
-        ComponentIterator::new(self.clone(), include_parent)
+    fn query_entity_by_name(&self, name: &'static str, include_parent: bool) -> EntityIterator{
+        EntityIterator::new(self.clone().into(), Some(name.to_string()), include_parent, false)
     }
-
-    fn query_components_by_predicate<T: Component, F: Fn(&T) -> bool>(&self, filter_predicate: F, include_parent: bool) -> FilteredComponentIterator<T, F> {
-        FilteredComponentIterator::new(self.clone(), filter_predicate, include_parent)
+    fn query_components<T: Component>(&self, include_parent: bool) -> ComponentIterator<T>{
+        ComponentIterator::new(self.clone().into(), include_parent)
     }
-
-    fn spawn_entity(&self, entity: Entity) {
-        let mut children = self.children.lock().expect("Couldn't spawn child!");
+    fn query_components_by_predicate<T: Component, F: Fn(&T) -> bool>(&self, filter_predicate: F, include_parent: bool) -> FilteredComponentIterator<T, F>{
+        FilteredComponentIterator::new(self.clone().into(), filter_predicate, include_parent)
+    }
+    fn spawn_entity(&self, entity: Entity){
+        let container = self.clone().into();
+        let mut children = container.children.lock().expect("Couldn't spawn child!");
 
         children.push(entity);
     }
 }
+
+impl EntityContainer for Entity {}
 
 impl IntoIterator for Entity {
     type Item = Entity;
     type IntoIter = EntityIterator;
 
     fn into_iter(self) -> Self::IntoIter {
-        EntityIterator::new(self.clone(), None, false)
+        EntityIterator::new(self.clone(), None, false, false)
     }
 }
 
 pub struct EntityIterator {
     parent: Entity,
     yield_parent: bool,
-    children_iter: Option<Box<dyn Iterator<Item = Entity>>>,
-    child_iter: Option<Box<dyn Iterator<Item = Entity>>>,
-    name_filter: Option<String>
+    first_relatives: Option<Box<dyn Iterator<Item = Entity>>>,
+    relatives_of_child: Option<Box<dyn Iterator<Item = Entity>>>,
+    name_filter: Option<String>,
+    first_relatives_only: bool,
+    first_relative_taken: bool
 }
 
 impl EntityIterator {
-    pub fn new(parent: Entity, name_filter: Option<String>, include_parent: bool) -> Self {
+    pub fn new(parent: Entity, name_filter: Option<String>, include_parent: bool, first_relatives_only: bool) -> Self {
         Self {
             parent: parent.clone(),
             yield_parent: include_parent,
-            children_iter: {
+            first_relatives: {
                 let children = (*parent.children.lock().unwrap()).clone();
                 Some(Box::new(children.into_iter()))
             },
-            child_iter: None,
-            name_filter
+            relatives_of_child: None,
+            name_filter,
+            first_relatives_only,
+            first_relative_taken: false
         }
     }
 
@@ -143,9 +148,10 @@ impl Iterator for EntityIterator {
         }
 
         while next.is_none(){
-            if let Some(first_child) = self.child_iter
-                .as_mut()
-                .map_or(None, |mut iter| iter.next()) {
+            let first_child = self.relatives_of_child.as_mut().map_or(None, |mut iter| iter.next());
+
+            if first_child.is_some() && (!self.first_relatives_only || !self.first_relative_taken) {
+                let first_child = first_child.unwrap();
                 let entity_ok = self.name_filter
                     .as_ref()
                     .map_or(
@@ -155,10 +161,12 @@ impl Iterator for EntityIterator {
 
                 if entity_ok {
                     next = Some(first_child.clone());
+                    self.first_relative_taken = true;
                 }
             }
-            else if let Some(second_child) = self.children_iter.as_mut().unwrap().next() {
-                self.child_iter = Some(Box::new(second_child.clone().query_entities(true)));
+            else if let Some(second_child) = self.first_relatives.as_mut().unwrap().next() {
+                self.relatives_of_child = Some(Box::new(second_child.clone().query_entities(true)));
+                self.first_relative_taken = false;
             }
             else{
                 break;
