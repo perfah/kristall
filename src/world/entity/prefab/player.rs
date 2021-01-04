@@ -31,7 +31,7 @@ impl Prefab for Player {
             .with_component(
                 Camera::new(
                     CameraPerspective::ThirdPersonView{ distance: 25f32, angle_horiz: 0f32, angle_vert: 0f32 },
-                    MouseCameraController::new(0.001f64, true)
+                    MouseCameraController::new(0.001f64, 0.01f64, false)
                  )
             )
             .with_component(Controller::new(WASDEntityController::new(InputAccelerationMethod::Force(10f32))))

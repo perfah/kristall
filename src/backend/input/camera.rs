@@ -120,10 +120,10 @@ pub struct MouseCameraController {
 }
 
 impl MouseCameraController {
-    pub fn new(mouse_sensitivity: f64, fast_scroll: bool) -> MouseCameraController{
+    pub fn new(mouse_sensitivity: f64, scroll_sensitivity: f64, fast_scroll: bool) -> MouseCameraController{
         MouseCameraController { 
             mouse_sensitivity,
-            scroll_sensitivity: 0.001f64,
+            scroll_sensitivity,
             midpoint: (0f64, 0f64),
             current_movement: (0f64, 0f64),
             current_scroll_vel: 0f64,
@@ -167,7 +167,8 @@ impl CameraController for MouseCameraController {
                     }
 
                     self.current_scroll_vel -= self.current_scroll_vel  * 
-                                               if self.fast_scroll { 0.01f64 } else { 0.05f64 } * 
+                                               if self.fast_scroll { 5.0 * self.mouse_sensitivity } 
+                                               else { 10.0 * self.mouse_sensitivity } * 
                                                delta.as_millis() as f64;
                 }
             
