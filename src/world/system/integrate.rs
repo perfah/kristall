@@ -16,10 +16,7 @@ pub struct IntegrateSystem {
 }
 
 impl<'a> System<'a> for IntegrateSystem {
-    type Environment = 
-        Vec<(SysEnvComponentMut<'a, Transform>,
-             SysEnvComponentMut<'a, RigidBody>)>
-    ;
+    type Environment = &'a Vec<(ComponentManager<Transform>, ComponentManager<RigidBody>)>;
 
     fn new() -> Self{
         Self { components: Vec::new() }
@@ -41,17 +38,17 @@ impl<'a> System<'a> for IntegrateSystem {
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
         Result::Ok(
-            self.components
-                .iter()
-                .map(|(a, b)| (a.into(), b.into()))
-                .collect()
+            &self.components
         )
     }
 
     fn on_run(&self, environment: Self::Environment, delta: Duration) {
         let delta = delta.as_secs_f32();
 
-        for (mut transform, mut rigid_body) in environment {
+        for (transform, rigid_body) in environment {
+            let transform: &mut Transform = &mut *transform.lock_component_for_write();
+            let rigid_body: &mut RigidBody = &mut *rigid_body.lock_component_for_write();
+            
             if !rigid_body.movable { continue; }
 
             let Transform { ref mut position, ref mut angular_rotation, ..} = *transform;
