@@ -302,6 +302,7 @@ impl WGPUState {
                 let model = loaded_models.get(model_str).unwrap();
 
                 for model_view in graphics_cache.get(model_str).unwrap() {
+                    model_view.write_to_gpu();
                     render_pass.draw_model(model, &self.uniform_bind_group, &model_view.bind_group);
                 }
             }
