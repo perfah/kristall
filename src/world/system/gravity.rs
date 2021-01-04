@@ -16,16 +16,14 @@ use cgmath::InnerSpace;
 pub const G: f64 = 0.000000000067f64;
 
 pub struct GravitySystem {
-    transforms: Vec<ComponentManager<Transform>>,
     rigid_bodies: Vec<ComponentManager<RigidBody>>
 }
 
 impl<'a> System<'a> for GravitySystem {
-    type Environment = (Vec<SysEnvComponent<'a, Transform>>, Vec<SysEnvComponentMut<'a, RigidBody>>);
+    type Environment = Vec<SysEnvComponentMut<'a, RigidBody>>;
 
     fn new() -> Self{
         Self {
-            transforms: Vec::new(),
             rigid_bodies: Vec::new()
         }
     }
@@ -33,48 +31,36 @@ impl<'a> System<'a> for GravitySystem {
     fn on_fetch<T: EntityContainer>(&mut self, source: &T) -> Result<(), SystemRuntimeError>{
         let iter = source
             .query_entities(true)
-            .map(|entity| (entity.component::<Transform>(), entity.component::<RigidBody>()))
-            .filter(|(a, b)| a.is_some() && b.is_some())
-            .map(|(a,b)| (a.unwrap(), b.unwrap()));
+            .map(|entity| entity.component::<RigidBody>())
+            .filter(|a| a.is_some())
+            .map(|a| a.unwrap());
 
-        for (transform, rigid_body) in iter {
-            self.transforms.push(transform);
+        for rigid_body in iter {
             self.rigid_bodies.push(rigid_body);
         }
-
-        if self.transforms.len() == self.rigid_bodies.len() {
-            Result::Ok(())
-        }
-        else {
-            Result::Err(SystemRuntimeError("Transforms != rigid bodies"))
-        }
+        
+        Result::Ok(())
     }
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
-        Result::Ok((
-            self.transforms
-                .iter()
-                .map(|mgr| mgr.into())
-                .collect(),
+        Result::Ok(
             self.rigid_bodies
                 .iter()
                 .map(|mgr| mgr.into())
                 .collect(),
-        ))
+        )
     }
 
-    fn on_run(&self, (transforms, mut rigid_bodies): Self::Environment, delta: Duration) {
-        for i in 0..transforms.len() {
-            for j in (i+1)..transforms.len() {
-                if rigid_bodies.get(i).unwrap().mass <= 0f32 || rigid_bodies.get(j).unwrap().mass <= 0f32{
+    fn on_run(&self, mut rigid_bodies: Self::Environment, _delta: Duration) {
+        for i in 0..rigid_bodies.len() {
+            for j in (i+1)..rigid_bodies.len() {
+                if rigid_bodies.get(i).unwrap().mass <= 0f32 || 
+                   rigid_bodies.get(j).unwrap().mass <= 0f32 {
                     continue;
                 }
 
-                let transform_i = transforms.get(i).unwrap();
-                let transform_j = transforms.get(j).unwrap();
-
-                let pos_i = transform_i.position;
-                let pos_j = transform_j.position;
+                let pos_i = rigid_bodies.get(i).unwrap().last_absolute_position;
+                let pos_j = rigid_bodies.get(j).unwrap().last_absolute_position;
                 let dist_i_to_j = pos_j - pos_i;
                 let dist_j_to_i = dist_i_to_j * -1.0;
                 let mass_i = rigid_bodies.get_mut(i).unwrap().mass as f64;

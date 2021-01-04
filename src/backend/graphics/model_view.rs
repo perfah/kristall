@@ -31,7 +31,7 @@ impl ModelView {
         ModelView { uniform_buffer, bind_group, queue: queue.clone() }
     }
 
-    pub fn translate(&self, transform: Transform) {
+    pub fn translate(&self, transform: &Transform) {
         let c = 2.0 * std::f32::consts::PI;
 
         let raw: [[f32; 4]; 4] = (

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub struct RigidBody {
     pub mass: f32,
     pub movable: bool,
+    pub last_absolute_position: Vector3<f32>,
     pub velocity: Vector3<f32>,
     pub acceleration: Vector3<f32>,
     pub angular_velocity: Vector3<f32>,
@@ -20,6 +21,7 @@ impl RigidBody{
         RigidBody { 
             mass, 
             movable: true,
+            last_absolute_position: Vector3 {x: 0.0, y: 0.0, z: 0.0},
             velocity: Vector3 {x: 0.0, y: 0.0, z: 0.0},
             acceleration: Vector3 {x: 0.0, y: 0.0, z: 0.0},
             angular_velocity: Vector3 {x: 0.0, y: 0.0, z: 0.0},
