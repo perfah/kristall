@@ -17,9 +17,7 @@ pub struct InputSystem {
 }
 
 impl<'a> System<'a> for InputSystem {
-    type Environment = 
-        Vec<(SysEnvComponent<'a, Controller>, Entity)>
-    ;
+    type Environment = &'a Vec<(ComponentManager<Controller>, Entity)>;
 
     fn new() -> Self{
         Self { resources: Vec::new() }
@@ -41,15 +39,13 @@ impl<'a> System<'a> for InputSystem {
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
         Result::Ok(
-            self.resources
-                .iter()
-                .map(|(a, b)| ( a.into(), b.clone() ))
-                .collect()
+            &self.resources
         )
     }
 
     fn on_run(&self, environment: Self::Environment, delta: Duration) {
-        for (ref controller, ref mut entity) in environment {
+        for (ref controller, ref entity) in environment {
+            let controller: &mut Controller = &mut *controller.lock_component_for_write();
             controller.update(entity, delta);            
         }
     }

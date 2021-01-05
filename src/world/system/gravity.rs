@@ -20,7 +20,7 @@ pub struct GravitySystem {
 }
 
 impl<'a> System<'a> for GravitySystem {
-    type Environment = Vec<SysEnvComponentMut<'a, RigidBody>>;
+    type Environment = &'a Vec<ComponentManager<RigidBody>>;
 
     fn new() -> Self{
         Self {
@@ -44,36 +44,34 @@ impl<'a> System<'a> for GravitySystem {
 
     fn on_freeze(&'a self) -> Result<Self::Environment, SystemRuntimeError> {
         Result::Ok(
-            self.rigid_bodies
-                .iter()
-                .map(|mgr| mgr.into())
-                .collect(),
+            &self.rigid_bodies
         )
     }
 
     fn on_run(&self, mut rigid_bodies: Self::Environment, _delta: Duration) {
         for i in 0..rigid_bodies.len() {
             for j in (i+1)..rigid_bodies.len() {
-                if rigid_bodies.get(i).unwrap().mass <= 0f32 || 
-                   rigid_bodies.get(j).unwrap().mass <= 0f32 {
+                let body_i: &mut RigidBody = &mut *rigid_bodies[i].lock_component_for_write();
+                let body_j: &mut RigidBody = &mut *rigid_bodies[j].lock_component_for_write();
+
+                if body_i.mass <= 0f32 || body_j.mass <= 0f32 {
                     continue;
                 }
 
-                let pos_i = rigid_bodies.get(i).unwrap().last_absolute_position;
-                let pos_j = rigid_bodies.get(j).unwrap().last_absolute_position;
+                let pos_i = body_i.last_absolute_position;
+                let pos_j = body_j.last_absolute_position;
                 let dist_i_to_j = pos_j - pos_i;
                 let dist_j_to_i = dist_i_to_j * -1.0;
-                let mass_i = rigid_bodies.get_mut(i).unwrap().mass as f64;
-                let mass_j = rigid_bodies.get_mut(j).unwrap().mass as f64;
+                let mass_i = body_i.mass as f64;
+                let mass_j = body_j.mass as f64;
 
                 let r = dist_i_to_j.magnitude().abs() as f64;
                 
                 let force = G * (mass_i * mass_j) / (r as f64 * r as f64);
 
                 // Apply forces:
-                rigid_bodies.get_mut(i).unwrap().commit_force("gravity", dist_i_to_j.normalize() * force as f32);                
-                rigid_bodies.get_mut(j).unwrap().commit_force("gravity", dist_j_to_i.normalize() * force as f32);
-                
+                body_i.commit_force("gravity", dist_i_to_j.normalize() * force as f32);                
+                body_j.commit_force("gravity", dist_j_to_i.normalize() * force as f32);                
             }
         }
 
